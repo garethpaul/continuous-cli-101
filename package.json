@@ -3,15 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node scripts/test-functions.js",
+    "check": "scripts/check-baseline.sh",
+    "verify": "npm test && npm run check && npm run audit",
     "start": "twilio-run",
-    "deploy": "twilio-run deploy"
+    "deploy": "twilio-run deploy",
+    "audit": "npm audit --audit-level=high"
   },
-  "dependencies": {},
   "devDependencies": {
-    "twilio-run": "^2.6.0"
+    "twilio-run": "^5.0.1"
   },
   "engines": {
-    "node": "10"
+    "node": "20"
+  },
+  "overrides": {
+    "title": "^4.0.1",
+    "file-type": "^21.3.4"
   }
 }

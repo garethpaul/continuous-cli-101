@@ -5,7 +5,8 @@
 
 ## Overview
 
-`garethpaul/continuous-cli-101` is a Node.js or JavaScript project. CLI Github Actions
+`garethpaul/continuous-cli-101` is a Twilio Serverless training sample with a
+GitHub Actions deployment workflow.
 
 This README is based on the checked-in source, manifests, scripts, and repository metadata on the `main` branch. The project language mix found during review was: JavaScript (4).
 
@@ -25,21 +26,22 @@ Additional scan context:
 - Source directories: .github, assets, functions
 - Dependency and build manifests: package-lock.json, package.json
 - Entry points or build surfaces: package.json
-- Test-looking files: no obvious test files detected
+- Test harness: `scripts/test-functions.js`
 
 ## Getting Started
 
 ### Prerequisites
 
 - Git
-- Node.js and npm
+- Node.js 20, matching `.nvmrc`
+- npm
 
 ### Setup
 
 ```bash
 git clone https://github.com/garethpaul/continuous-cli-101.git
 cd continuous-cli-101
-npm install
+npm ci
 ```
 
 The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
@@ -50,19 +52,40 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 Detected npm scripts:
 
+- `npm run audit` - `npm audit --audit-level=high`
+- `npm run check` - `scripts/check-baseline.sh`
 - `npm run deploy` - `twilio-run deploy`
 - `npm run start` - `twilio-run`
-- `npm run test` - `echo "Error: no test specified" && exit 1`
+- `npm run test` - `node scripts/test-functions.js`
+- `npm run verify` - `npm test && npm run check && npm run audit`
 
 ## Testing and Verification
 
-- No dedicated automated test command was identified from the checked-in files. Verify changes by running the relevant build or manually exercising the sample.
+Run the local function harness before changing or deploying functions:
+
+```bash
+npm test
+npm run check
+npm run audit
+npm run verify
+```
+
+The test harness stubs the Twilio Runtime and TwiML response classes, so it
+does not require Twilio credentials, network access, or a deployment. It covers
+the public JSON function, protected SMS reply, private asset message, and the
+missing private asset error path.
+
+`npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
+`npm run verify` also runs the high-severity npm audit gate.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
-- Detected references to Twilio. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
+- Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
+  secrets or local environment variables only.
+- GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
+  deployment is only available through a manual `workflow_dispatch` run.
 
 ## Security and Privacy Notes
 
@@ -73,6 +96,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `CHANGES.md` for maintenance history.
 
 ## Contributing
 

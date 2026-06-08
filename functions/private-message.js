@@ -1,9 +1,17 @@
 exports.handler = function(context, event, callback) {
-  const assets = Runtime.getAssets();
-  const privateMessageAsset = assets['/message.js'];
-  const privateMessagePath = privateMessageAsset.path;
-  const privateMessage = require(privateMessagePath);
-  const twiml = new Twilio.twiml.MessagingResponse();
-  twiml.message(privateMessage());
-  callback(null, twiml);
+  try {
+    const assets = Runtime.getAssets();
+    const privateMessageAsset = assets['/message.js'];
+    if (!privateMessageAsset || !privateMessageAsset.path) {
+      callback(new Error('Private message asset /message.js is not available.'));
+      return;
+    }
+
+    const privateMessage = require(privateMessageAsset.path);
+    const twiml = new Twilio.twiml.MessagingResponse();
+    twiml.message(privateMessage());
+    callback(null, twiml);
+  } catch (error) {
+    callback(error);
+  }
 };
