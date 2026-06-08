@@ -47,3 +47,6 @@ public browser assets.
 - Workflow changes that expose secrets in logs
 - Large app features that obscure the CLI training purpose
 - Failing placeholder tests left as the default quality gate
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
