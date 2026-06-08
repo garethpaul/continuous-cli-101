@@ -75,7 +75,3 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
 
-## Existing Documentation Context
-
-The previous README summary was: continuous-cli-101 Overview `garethpaul/continuous-cli-101` is a Node.js or JavaScript project. CLI Github Actions This README is based on the checked-in source, manifests, scripts, and repository metadata on the `main` branch. The project language mix found during review was: JavaScript (4). Repository Contents - `package.json` - JavaScript dependency and script metadata - `.github` - source or example code - `assets` - source or example code
-
