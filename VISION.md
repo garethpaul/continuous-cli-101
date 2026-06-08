@@ -41,7 +41,7 @@ secrets or local environment configuration. They must never be committed.
 Protected functions and private assets should remain clearly separated from
 public browser assets.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Committed Twilio credentials or deployment artifacts
 - Workflow changes that expose secrets in logs
