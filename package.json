@@ -3,14 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "lint": "eslint assets functions scripts --max-warnings=0",
     "test": "node scripts/test-functions.js",
     "check": "scripts/check-baseline.sh",
-    "verify": "npm test && npm run check && npm run audit",
+    "verify": "npm run lint && npm test && npm run check && npm run audit",
     "start": "twilio-run",
     "deploy": "twilio-run deploy",
     "audit": "npm audit --audit-level=high"
   },
   "devDependencies": {
+    "eslint": "^9.39.4",
     "twilio-run": "^5.0.1"
   },
   "engines": {

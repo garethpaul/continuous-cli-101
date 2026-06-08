@@ -55,20 +55,25 @@ Detected npm scripts:
 - `npm run audit` - `npm audit --audit-level=high`
 - `npm run check` - `scripts/check-baseline.sh`
 - `npm run deploy` - `twilio-run deploy`
+- `npm run lint` - `eslint assets functions scripts --max-warnings=0`
 - `npm run start` - `twilio-run`
 - `npm run test` - `node scripts/test-functions.js`
-- `npm run verify` - `npm test && npm run check && npm run audit`
+- `npm run verify` - `npm run lint && npm test && npm run check && npm run audit`
 
 ## Testing and Verification
 
 Run the local function harness before changing or deploying functions:
 
 ```bash
+npm run lint
 npm test
 npm run check
 npm run audit
 npm run verify
 ```
+
+`npm run lint` runs ESLint against the checked-in JavaScript assets,
+functions, and test scripts with zero warnings allowed.
 
 The test harness stubs the Twilio Runtime and TwiML response classes, so it
 does not require Twilio credentials, network access, or a deployment. It covers
@@ -76,7 +81,8 @@ the public JSON function, protected SMS reply, private asset message, and the
 missing private asset error path.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
-`npm run verify` also runs the high-severity npm audit gate.
+`npm run verify` runs lint, tests, source checks, and the high-severity npm
+audit gate in the same order used by CI.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 

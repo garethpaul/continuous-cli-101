@@ -9,3 +9,5 @@
 - Added an explicit callback error when the private message asset is missing.
 - Updated GitHub Actions to verify pushes and pull requests while reserving
   credentialed Twilio deployment for manual `workflow_dispatch` runs.
+- Added an ESLint flat config and included the zero-warning lint gate in
+  `npm run verify`.

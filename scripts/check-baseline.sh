@@ -7,6 +7,7 @@ PACKAGE_LOCK="$ROOT_DIR/package-lock.json"
 WORKFLOW="$ROOT_DIR/.github/workflows/main.yml"
 README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-twilio-function-test-baseline.md"
+LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-eslint-quality-gate.md"
 
 require_file() {
   path=$1
@@ -18,6 +19,7 @@ require_file() {
 
 for path in \
   ".nvmrc" \
+  "eslint.config.js" \
   "README.md" \
   "package.json" \
   "package-lock.json" \
@@ -28,7 +30,8 @@ for path in \
   "functions/private-message.js" \
   "functions/sms/reply.protected.js" \
   "scripts/test-functions.js" \
-  "docs/plans/2026-06-08-twilio-function-test-baseline.md"; do
+  "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
+  "docs/plans/2026-06-08-eslint-quality-gate.md"; do
   require_file "$path"
 done
 
@@ -52,12 +55,22 @@ if ! grep -Fq '"twilio-run": "^5.0.1"' "$PACKAGE_LOCK"; then
   exit 1
 fi
 
+if ! grep -Fq '"eslint": "^9.' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must keep the ESLint 9.x lint baseline." >&2
+  exit 1
+fi
+
 if ! grep -Fq '"test": "node scripts/test-functions.js"' "$PACKAGE_JSON"; then
   printf '%s\n' "package.json must expose the function test script." >&2
   exit 1
 fi
 
-if ! grep -Fq '"verify": "npm test && npm run check && npm run audit"' "$PACKAGE_JSON"; then
+if ! grep -Fq '"lint": "eslint assets functions scripts --max-warnings=0"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must expose the JavaScript lint script." >&2
+  exit 1
+fi
+
+if ! grep -Fq '"verify": "npm run lint && npm test && npm run check && npm run audit"' "$PACKAGE_JSON"; then
   printf '%s\n' "package.json must expose the combined verify script." >&2
   exit 1
 fi
@@ -69,6 +82,11 @@ fi
 
 if ! grep -Fq "npm run audit" "$README"; then
   printf '%s\n' "README must document the high-severity audit gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "npm run lint" "$README"; then
+  printf '%s\n' "README must document the JavaScript lint gate." >&2
   exit 1
 fi
 
@@ -84,6 +102,16 @@ fi
 
 if ! grep -Fq "Twilio function tests passed." "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must have a clear success marker." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Runtime: "readonly"' "$ROOT_DIR/eslint.config.js"; then
+  printf '%s\n' "ESLint config must recognize Twilio Runtime globals." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Twilio: "readonly"' "$ROOT_DIR/eslint.config.js"; then
+  printf '%s\n' "ESLint config must recognize Twilio helper globals." >&2
   exit 1
 fi
 
@@ -129,6 +157,11 @@ fi
 
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$LINT_PLAN"; then
+  printf '%s\n' "Lint plan must be marked completed." >&2
   exit 1
 fi
 
