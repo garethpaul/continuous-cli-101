@@ -35,6 +35,11 @@ Contribution rules:
 
 ## Security
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
 secrets or local environment configuration. They must never be committed.
 
