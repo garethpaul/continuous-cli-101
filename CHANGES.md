@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Added `make check` as the root wrapper for lint, function tests, source
+  checks, and the high-severity npm audit gate.
 - Guarded the private-message function when Twilio Runtime returns a null
   asset map and covered it in the local harness.
 - Replaced the failing placeholder test command with a no-credential Twilio
