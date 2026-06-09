@@ -151,6 +151,16 @@ async function run() {
   });
   assert.strictEqual(relativeAssetPathError.message, "Private message asset /message.js is not available.");
 
+  const directoryAssetPathError = await invoke(privateMessage, {
+    assets: {
+      "/message.js": {
+        path: __dirname
+      }
+    },
+    expectError: true
+  });
+  assert.strictEqual(directoryAssetPathError.message, "Private message asset /message.js is not available.");
+
   const nonFunctionMessagePath = path.join(__dirname, "fixtures/non-function-message.js");
   const nonFunctionAssetError = await invoke(privateMessage, {
     assets: {

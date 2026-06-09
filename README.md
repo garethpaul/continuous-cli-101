@@ -81,7 +81,7 @@ does not require Twilio credentials, network access, or a deployment. It covers
 the public JSON function, protected SMS reply, private asset message, and the
 missing private asset error path. Those tests include a null Runtime asset map,
 a blank private asset path, a relative private asset path, and
-a malformed private asset export.
+a directory private asset path, and a malformed private asset export.
 It also covers blank private asset message output before it can reach TwiML.
 The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.
@@ -111,8 +111,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Manual Twilio deployment should continue to call the package-lock-pinned
   `npm run deploy` script from the workflow.
 - Private `/message.js` assets must export a function that returns a non-empty
-  string from a non-blank absolute asset path before `private-message` adds it
-  to TwiML.
+  string from a non-blank absolute file asset path before `private-message`
+  adds it to TwiML.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for maintenance history.
@@ -122,6 +122,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   path validation.
 - See `docs/plans/2026-06-09-private-asset-absolute-path-guard.md` for private
   asset absolute path validation.
+- See `docs/plans/2026-06-09-private-asset-file-path-guard.md` for private
+  asset file path validation.
 - See `docs/plans/2026-06-09-readme-contract-whitespace-guard.md` for
   line-wrap-tolerant README contract checks.
 - See `docs/plans/2026-06-08-continuous-cli-check-wrapper.md` for the root

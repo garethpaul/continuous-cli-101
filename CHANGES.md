@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Rejected directory or missing-file private `/message.js` asset paths before
+  module loading and covered the directory-path case in the local harness.
 - Made README contract checks tolerate normal Markdown line wrapping.
 - Rejected relative private `/message.js` asset paths before module loading and
   covered the relative-path case in the local harness.

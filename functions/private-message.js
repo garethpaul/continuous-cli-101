@@ -1,4 +1,15 @@
+const fs = require('fs');
 const path = require('path');
+
+function isReadableFile(assetPath) {
+  try {
+    const stats = fs.statSync(assetPath);
+    fs.accessSync(assetPath, fs.constants.R_OK);
+    return stats.isFile();
+  } catch {
+    return false;
+  }
+}
 
 exports.handler = function(context, event, callback) {
   try {
@@ -6,7 +17,8 @@ exports.handler = function(context, event, callback) {
     const privateMessageAsset = assets && assets['/message.js'];
     if (!privateMessageAsset || typeof privateMessageAsset.path !== 'string' ||
         privateMessageAsset.path.trim() === '' ||
-        !path.isAbsolute(privateMessageAsset.path)) {
+        !path.isAbsolute(privateMessageAsset.path) ||
+        !isReadableFile(privateMessageAsset.path)) {
       callback(new Error('Private message asset /message.js is not available.'));
       return;
     }
