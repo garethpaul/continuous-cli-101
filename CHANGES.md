@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Rejected relative private `/message.js` asset paths before module loading and
+  covered the relative-path case in the local harness.
 - Rejected missing, non-string, and blank private `/message.js` asset paths
   before module loading and covered the blank-path case in the local harness.
 - Added a callback error and local fixture coverage for private `/message.js`

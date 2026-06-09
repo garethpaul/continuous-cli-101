@@ -9,6 +9,7 @@ README="$ROOT_DIR/README.md"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-twilio-function-test-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-eslint-quality-gate.md"
 PRIVATE_ASSET_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-path-guard.md"
+PRIVATE_ASSET_ABSOLUTE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-absolute-path-guard.md"
 
 require_file() {
   path=$1
@@ -37,6 +38,7 @@ for path in \
   "docs/plans/2026-06-08-eslint-quality-gate.md" \
   "docs/plans/2026-06-09-private-asset-export-guard.md" \
   "docs/plans/2026-06-09-private-asset-path-guard.md" \
+  "docs/plans/2026-06-09-private-asset-absolute-path-guard.md" \
   "docs/plans/2026-06-09-twiml-harness-escaping.md"; do
   require_file "$path"
 done
@@ -139,6 +141,11 @@ if ! grep -Fq "Private message asset /message.js is not available." "$ROOT_DIR/f
   exit 1
 fi
 
+if ! grep -Fq "const path = require('path');" "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must use Node path helpers for asset path validation." >&2
+  exit 1
+fi
+
 if ! grep -Fq "assets && assets['/message.js']" "$ROOT_DIR/functions/private-message.js"; then
   printf '%s\n' "private-message must guard a missing Runtime asset map before reading /message.js." >&2
   exit 1
@@ -147,6 +154,11 @@ fi
 if ! grep -Fq "typeof privateMessageAsset.path !== 'string'" "$ROOT_DIR/functions/private-message.js" ||
   ! grep -Fq "privateMessageAsset.path.trim() === ''" "$ROOT_DIR/functions/private-message.js"; then
   printf '%s\n' "private-message must reject missing, non-string, or blank private asset paths." >&2
+  exit 1
+fi
+
+if ! grep -Fq "!path.isAbsolute(privateMessageAsset.path)" "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must reject non-absolute private asset paths before require()." >&2
   exit 1
 fi
 
@@ -178,6 +190,11 @@ fi
 
 if ! grep -Fq 'path: "   "' "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must cover blank private asset paths." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'path: "assets/message.private.js"' "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover relative private asset paths." >&2
   exit 1
 fi
 
@@ -247,6 +264,11 @@ if ! grep -Fq "blank private asset path" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "relative private asset path" "$README"; then
+  printf '%s\n' "README must document relative private asset path coverage." >&2
+  exit 1
+fi
+
 if ! grep -Fq "malformed private asset export" "$README"; then
   printf '%s\n' "README must document malformed private asset export coverage." >&2
   exit 1
@@ -299,6 +321,16 @@ fi
 
 if ! grep -Fq "make check" "$PRIVATE_ASSET_PATH_PLAN"; then
   printf '%s\n' "Private asset path guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$PRIVATE_ASSET_ABSOLUTE_PATH_PLAN"; then
+  printf '%s\n' "Private asset absolute path guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$PRIVATE_ASSET_ABSOLUTE_PATH_PLAN"; then
+  printf '%s\n' "Private asset absolute path guard plan must record make check verification." >&2
   exit 1
 fi
 
