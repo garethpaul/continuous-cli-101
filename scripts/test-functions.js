@@ -5,13 +5,22 @@ function MessagingResponse() {
   this.messages = [];
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 MessagingResponse.prototype.message = function message(body) {
   this.messages.push(String(body));
 };
 
 MessagingResponse.prototype.toString = function toString() {
   return this.messages.map(function renderMessage(body) {
-    return "<Response><Message>" + body + "</Message></Response>";
+    return "<Response><Message>" + escapeXml(body) + "</Message></Response>";
   }).join("");
 };
 
@@ -86,6 +95,13 @@ async function run() {
   assert.deepStrictEqual(helloResult, {
     message: "Hello CLI 101 Training from Wednesday"
   });
+
+  const escapedResponse = new MessagingResponse();
+  escapedResponse.message("A&B <C> \"quote\" 'apostrophe'");
+  assert.strictEqual(
+    escapedResponse.toString(),
+    "<Response><Message>A&amp;B &lt;C&gt; &quot;quote&quot; &apos;apostrophe&apos;</Message></Response>"
+  );
 
   const smsResult = await invoke(smsReply);
   assert.strictEqual(smsResult.toString(), "<Response><Message>Hello World!</Message></Response>");

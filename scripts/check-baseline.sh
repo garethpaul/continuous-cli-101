@@ -33,7 +33,8 @@ for path in \
   "scripts/test-functions.js" \
   "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
   "docs/plans/2026-06-08-eslint-quality-gate.md" \
-  "docs/plans/2026-06-09-private-asset-export-guard.md"; do
+  "docs/plans/2026-06-09-private-asset-export-guard.md" \
+  "docs/plans/2026-06-09-twiml-harness-escaping.md"; do
   require_file "$path"
 done
 
@@ -104,6 +105,19 @@ fi
 
 if ! grep -Fq "Twilio function tests passed." "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must have a clear success marker." >&2
+  exit 1
+fi
+
+if ! grep -Fq "function escapeXml" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must escape local TwiML message bodies." >&2
+  exit 1
+fi
+
+if ! grep -Fq "&amp;" "$ROOT_DIR/scripts/test-functions.js" ||
+  ! grep -Fq "&lt;" "$ROOT_DIR/scripts/test-functions.js" ||
+  ! grep -Fq "&quot;" "$ROOT_DIR/scripts/test-functions.js" ||
+  ! grep -Fq "&apos;" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover XML entity escaping in TwiML output." >&2
   exit 1
 fi
 
@@ -202,6 +216,11 @@ if ! grep -Fq "malformed private asset export" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "XML-escapes local TwiML message bodies" "$README"; then
+  printf '%s\n' "README must document local TwiML escaping coverage." >&2
+  exit 1
+fi
+
 if ! grep -Fq "workflow_dispatch" "$README"; then
   printf '%s\n' "README must document manual deployment workflow behavior." >&2
   exit 1
@@ -239,6 +258,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-locked-twilio-deploy-script.md"; then
   printf '%s\n' "Locked Twilio deploy script plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-twiml-harness-escaping.md"; then
+  printf '%s\n' "TwiML harness escaping plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-twiml-harness-escaping.md"; then
+  printf '%s\n' "TwiML harness escaping plan must record make check verification." >&2
   exit 1
 fi
 

@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Updated the local TwiML test harness to XML-escape message bodies and assert
+  escaping for special characters.
 - Switched the manual GitHub Actions deploy step to the package-lock-pinned
   `npm run deploy` script instead of global Twilio CLI/plugin installs.
 - Added an explicit callback error when the private `/message.js` asset does

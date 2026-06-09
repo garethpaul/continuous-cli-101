@@ -80,7 +80,8 @@ The test harness stubs the Twilio Runtime and TwiML response classes, so it
 does not require Twilio credentials, network access, or a deployment. It covers
 the public JSON function, protected SMS reply, private asset message, and the
 missing private asset error path, including a null Runtime asset map and a
-malformed private asset export.
+malformed private asset export. It also XML-escapes local TwiML message bodies
+so special characters are represented safely in the harness output.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the high-severity npm

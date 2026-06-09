@@ -20,6 +20,7 @@ Priority:
 - Preserve the Twilio Functions and assets as simple examples
 - Keep deployment credentials in GitHub Actions secrets
 - Keep private asset contracts explicit in local function tests
+- Keep local TwiML harness output escaped like production XML
 - Make Node and Twilio CLI expectations explicit
 - Keep manual deploy tooling tied to package-lock-pinned dependencies
 - Keep lint, test, and audit gates useful in normal CI paths
