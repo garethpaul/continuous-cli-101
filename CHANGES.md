@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Rejected missing, non-string, and blank private `/message.js` asset paths
+  before module loading and covered the blank-path case in the local harness.
 - Added a callback error and local fixture coverage for private `/message.js`
   assets that return blank or non-string message output.
 - Updated the local TwiML test harness to XML-escape message bodies and assert
