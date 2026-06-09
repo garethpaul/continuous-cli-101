@@ -120,6 +120,16 @@ if ! grep -Fq "Private message asset /message.js is not available." "$ROOT_DIR/f
   exit 1
 fi
 
+if ! grep -Fq "assets && assets['/message.js']" "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must guard a missing Runtime asset map before reading /message.js." >&2
+  exit 1
+fi
+
+if ! grep -Fq "assets: null" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover a null Runtime asset map." >&2
+  exit 1
+fi
+
 if grep -Fq "TWILIO_ACCOUNT_SID" "$WORKFLOW" && ! grep -Fq "github.event_name == 'workflow_dispatch'" "$WORKFLOW"; then
   printf '%s\n' "Credentialed deploy steps must be gated to manual workflow_dispatch runs." >&2
   exit 1
@@ -147,6 +157,11 @@ fi
 
 if ! grep -Fq "npm run verify" "$README"; then
   printf '%s\n' "README must document the verification command." >&2
+  exit 1
+fi
+
+if ! grep -Fq "null Runtime asset map" "$README"; then
+  printf '%s\n' "README must document the null Runtime asset-map test case." >&2
   exit 1
 fi
 

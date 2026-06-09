@@ -1,7 +1,7 @@
 exports.handler = function(context, event, callback) {
   try {
     const assets = Runtime.getAssets();
-    const privateMessageAsset = assets['/message.js'];
+    const privateMessageAsset = assets && assets['/message.js'];
     if (!privateMessageAsset || !privateMessageAsset.path) {
       callback(new Error('Private message asset /message.js is not available.'));
       return;

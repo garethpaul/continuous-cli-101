@@ -44,7 +44,7 @@ function invoke(handler, options) {
 
     global.Runtime = {
       getAssets: function getAssets() {
-        return options.assets || {};
+        return Object.prototype.hasOwnProperty.call(options, "assets") ? options.assets : {};
       }
     };
 
@@ -108,6 +108,12 @@ async function run() {
     expectError: true
   });
   assert.strictEqual(missingAssetError.message, "Private message asset /message.js is not available.");
+
+  const nullAssetsError = await invoke(privateMessage, {
+    assets: null,
+    expectError: true
+  });
+  assert.strictEqual(nullAssetsError.message, "Private message asset /message.js is not available.");
 }
 
 run()

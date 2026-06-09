@@ -2,6 +2,8 @@
 
 ## 2026-06-08
 
+- Guarded the private-message function when Twilio Runtime returns a null
+  asset map and covered it in the local harness.
 - Replaced the failing placeholder test command with a no-credential Twilio
   Function harness and a combined `npm run verify` gate.
 - Updated the project baseline to Node 20 and `twilio-run` 5.x with a refreshed
