@@ -122,6 +122,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   path validation.
 - See `docs/plans/2026-06-09-private-asset-absolute-path-guard.md` for private
   asset absolute path validation.
+- See `docs/plans/2026-06-09-readme-contract-whitespace-guard.md` for
+  line-wrap-tolerant README contract checks.
 - See `docs/plans/2026-06-08-continuous-cli-check-wrapper.md` for the root
   verification wrapper baseline.
 

@@ -10,6 +10,7 @@ PLAN="$ROOT_DIR/docs/plans/2026-06-08-twilio-function-test-baseline.md"
 LINT_PLAN="$ROOT_DIR/docs/plans/2026-06-08-eslint-quality-gate.md"
 PRIVATE_ASSET_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-path-guard.md"
 PRIVATE_ASSET_ABSOLUTE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-absolute-path-guard.md"
+README_CONTRACT_WHITESPACE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readme-contract-whitespace-guard.md"
 
 require_file() {
   path=$1
@@ -39,6 +40,7 @@ for path in \
   "docs/plans/2026-06-09-private-asset-export-guard.md" \
   "docs/plans/2026-06-09-private-asset-path-guard.md" \
   "docs/plans/2026-06-09-private-asset-absolute-path-guard.md" \
+  "docs/plans/2026-06-09-readme-contract-whitespace-guard.md" \
   "docs/plans/2026-06-09-twiml-harness-escaping.md"; do
   require_file "$path"
 done
@@ -337,6 +339,16 @@ fi
 
 if ! grep -Fq "make check" "$PRIVATE_ASSET_ABSOLUTE_PATH_PLAN"; then
   printf '%s\n' "Private asset absolute path guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$README_CONTRACT_WHITESPACE_PLAN"; then
+  printf '%s\n' "README contract whitespace guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$README_CONTRACT_WHITESPACE_PLAN"; then
+  printf '%s\n' "README contract whitespace guard plan must record make check verification." >&2
   exit 1
 fi
 

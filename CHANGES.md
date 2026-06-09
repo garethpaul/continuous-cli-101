@@ -2,6 +2,7 @@
 
 ## 2026-06-09
 
+- Made README contract checks tolerate normal Markdown line wrapping.
 - Rejected relative private `/message.js` asset paths before module loading and
   covered the relative-path case in the local harness.
 - Rejected missing, non-string, and blank private `/message.js` asset paths
