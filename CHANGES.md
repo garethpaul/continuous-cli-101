@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added a callback error and local fixture coverage for private `/message.js`
+  assets that return blank or non-string message output.
 - Updated the local TwiML test harness to XML-escape message bodies and assert
   escaping for special characters.
 - Switched the manual GitHub Actions deploy step to the package-lock-pinned

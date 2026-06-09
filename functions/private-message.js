@@ -13,8 +13,14 @@ exports.handler = function(context, event, callback) {
       return;
     }
 
+    const message = privateMessage();
+    if (typeof message !== 'string' || message.trim() === '') {
+      callback(new Error('Private message asset /message.js must return a non-empty string.'));
+      return;
+    }
+
     const twiml = new Twilio.twiml.MessagingResponse();
-    twiml.message(privateMessage());
+    twiml.message(message);
     callback(null, twiml);
   } catch (error) {
     callback(error);

@@ -29,6 +29,7 @@ for path in \
   "functions/hello-world.js" \
   "functions/private-message.js" \
   "functions/sms/reply.protected.js" \
+  "scripts/fixtures/blank-message.js" \
   "scripts/fixtures/non-function-message.js" \
   "scripts/test-functions.js" \
   "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
@@ -151,6 +152,17 @@ if ! grep -Fq "Private message asset /message.js must export a function." "$ROOT
   exit 1
 fi
 
+if ! grep -Fq "typeof message !== 'string'" "$ROOT_DIR/functions/private-message.js" ||
+  ! grep -Fq "message.trim() === ''" "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must reject blank or non-string private asset output." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Private message asset /message.js must return a non-empty string." "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must return an explicit blank private asset message error." >&2
+  exit 1
+fi
+
 if ! grep -Fq "assets: null" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must cover a null Runtime asset map." >&2
   exit 1
@@ -163,6 +175,12 @@ fi
 
 if ! grep -Fq "must export a function" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must assert the malformed private asset error." >&2
+  exit 1
+fi
+
+if ! grep -Fq "blank-message.js" "$ROOT_DIR/scripts/test-functions.js" ||
+  ! grep -Fq "must return a non-empty string" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover blank private asset message output." >&2
   exit 1
 fi
 
@@ -216,7 +234,12 @@ if ! grep -Fq "malformed private asset export" "$README"; then
   exit 1
 fi
 
-if ! grep -Fq "XML-escapes local TwiML message bodies" "$README"; then
+if ! grep -Fq "blank private asset message" "$README"; then
+  printf '%s\n' "README must document blank private asset message coverage." >&2
+  exit 1
+fi
+
+if ! grep -Fq "XML-escapes local TwiML message" "$README"; then
   printf '%s\n' "README must document local TwiML escaping coverage." >&2
   exit 1
 fi
@@ -268,6 +291,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-twiml-harness-escaping.md"; then
   printf '%s\n' "TwiML harness escaping plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-message-text-guard.md"; then
+  printf '%s\n' "Private asset message text guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-message-text-guard.md"; then
+  printf '%s\n' "Private asset message text guard plan must record make check verification." >&2
   exit 1
 fi
 

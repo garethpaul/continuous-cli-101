@@ -144,6 +144,20 @@ async function run() {
     nonFunctionAssetError.message,
     "Private message asset /message.js must export a function."
   );
+
+  const blankMessagePath = path.join(__dirname, "fixtures/blank-message.js");
+  const blankMessageError = await invoke(privateMessage, {
+    assets: {
+      "/message.js": {
+        path: blankMessagePath
+      }
+    },
+    expectError: true
+  });
+  assert.strictEqual(
+    blankMessageError.message,
+    "Private message asset /message.js must return a non-empty string."
+  );
 }
 
 run()
