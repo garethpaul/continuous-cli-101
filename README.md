@@ -94,6 +94,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   secrets or local environment variables only.
 - GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
   deployment is only available through a manual `workflow_dispatch` run.
+- The manual deploy job uses the package-lock-pinned deploy script instead of
+  installing the latest global Twilio CLI and plugin during CI.
 
 ## Security and Privacy Notes
 
@@ -102,6 +104,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Maintenance Notes
 
+- Manual Twilio deployment should continue to call the package-lock-pinned
+  `npm run deploy` script from the workflow.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for maintenance history.

@@ -157,6 +157,16 @@ if grep -Fq "TWILIO_ACCOUNT_SID" "$WORKFLOW" && ! grep -Fq "github.event_name ==
   exit 1
 fi
 
+if grep -Fq "npm install --global twilio-cli" "$WORKFLOW" || grep -Fq "twilio plugins:install" "$WORKFLOW"; then
+  printf '%s\n' "Workflow deploy must use the package-lock-pinned twilio-run script instead of global Twilio CLI installs." >&2
+  exit 1
+fi
+
+if ! grep -Fq "npm run deploy -- --service-name=example-deployed-with-github-actions --environment=dev --force" "$WORKFLOW"; then
+  printf '%s\n' "Workflow deploy must call the package-lock-pinned npm deploy script." >&2
+  exit 1
+fi
+
 if ! grep -Fq "npm run verify" "$WORKFLOW"; then
   printf '%s\n' "Workflow must run the local verification script." >&2
   exit 1
@@ -197,6 +207,11 @@ if ! grep -Fq "workflow_dispatch" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "package-lock-pinned deploy script" "$README"; then
+  printf '%s\n' "README must document the locked deploy script baseline." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN"; then
   printf '%s\n' "Plan must be marked completed." >&2
   exit 1
@@ -214,6 +229,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-export-guard.md"; then
   printf '%s\n' "Private asset export guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-locked-twilio-deploy-script.md"; then
+  printf '%s\n' "Locked Twilio deploy script plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-locked-twilio-deploy-script.md"; then
+  printf '%s\n' "Locked Twilio deploy script plan must record make check verification." >&2
   exit 1
 fi
 

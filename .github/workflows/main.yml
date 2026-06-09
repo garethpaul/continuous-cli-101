@@ -35,7 +35,4 @@ jobs:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_API_KEY: ${{ secrets.TWILIO_API_KEY }}
           TWILIO_API_SECRET: ${{ secrets.TWILIO_API_SECRET }}
-        run: |
-          npm install --global twilio-cli
-          twilio plugins:install @twilio-labs/plugin-serverless
-          twilio serverless:deploy --service-name=example-deployed-with-github-actions --environment=dev --force
+        run: npm run deploy -- --service-name=example-deployed-with-github-actions --environment=dev --force

@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Switched the manual GitHub Actions deploy step to the package-lock-pinned
+  `npm run deploy` script instead of global Twilio CLI/plugin installs.
 - Added an explicit callback error when the private `/message.js` asset does
   not export the expected function.
 - Added local harness coverage and a fixture for malformed private asset
