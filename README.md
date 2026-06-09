@@ -79,8 +79,9 @@ functions, and test scripts with zero warnings allowed.
 The test harness stubs the Twilio Runtime and TwiML response classes, so it
 does not require Twilio credentials, network access, or a deployment. It covers
 the public JSON function, protected SMS reply, private asset message, and the
-missing private asset error path, including a null Runtime asset map, a blank
-private asset path, a relative private asset path, and a malformed private asset export.
+missing private asset error path. Those tests include a null Runtime asset map,
+a blank private asset path, a relative private asset path, and
+a malformed private asset export.
 It also covers blank private asset message output before it can reach TwiML.
 The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.

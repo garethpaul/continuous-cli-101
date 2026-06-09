@@ -249,37 +249,43 @@ if ! grep -Fq "node-version-file: .nvmrc" "$WORKFLOW"; then
   exit 1
 fi
 
-if ! grep -Fq "npm run verify" "$README"; then
+README_TEXT=$(tr '\n' ' ' < "$README")
+
+readme_has() {
+  printf '%s\n' "$README_TEXT" | grep -Fq "$1"
+}
+
+if ! readme_has "npm run verify"; then
   printf '%s\n' "README must document the verification command." >&2
   exit 1
 fi
 
-if ! grep -Fq "null Runtime asset map" "$README"; then
+if ! readme_has "null Runtime asset map"; then
   printf '%s\n' "README must document the null Runtime asset-map test case." >&2
   exit 1
 fi
 
-if ! grep -Fq "blank private asset path" "$README"; then
+if ! readme_has "blank private asset path"; then
   printf '%s\n' "README must document blank private asset path coverage." >&2
   exit 1
 fi
 
-if ! grep -Fq "relative private asset path" "$README"; then
+if ! readme_has "relative private asset path"; then
   printf '%s\n' "README must document relative private asset path coverage." >&2
   exit 1
 fi
 
-if ! grep -Fq "malformed private asset export" "$README"; then
+if ! readme_has "malformed private asset export"; then
   printf '%s\n' "README must document malformed private asset export coverage." >&2
   exit 1
 fi
 
-if ! grep -Fq "blank private asset message" "$README"; then
+if ! readme_has "blank private asset message"; then
   printf '%s\n' "README must document blank private asset message coverage." >&2
   exit 1
 fi
 
-if ! grep -Fq "XML-escapes local TwiML message" "$README"; then
+if ! readme_has "XML-escapes local TwiML message"; then
   printf '%s\n' "README must document local TwiML escaping coverage." >&2
   exit 1
 fi
