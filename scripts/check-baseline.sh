@@ -29,9 +29,11 @@ for path in \
   "functions/hello-world.js" \
   "functions/private-message.js" \
   "functions/sms/reply.protected.js" \
+  "scripts/fixtures/non-function-message.js" \
   "scripts/test-functions.js" \
   "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
-  "docs/plans/2026-06-08-eslint-quality-gate.md"; do
+  "docs/plans/2026-06-08-eslint-quality-gate.md" \
+  "docs/plans/2026-06-09-private-asset-export-guard.md"; do
   require_file "$path"
 done
 
@@ -125,8 +127,28 @@ if ! grep -Fq "assets && assets['/message.js']" "$ROOT_DIR/functions/private-mes
   exit 1
 fi
 
+if ! grep -Fq "typeof privateMessage !== 'function'" "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must validate that the private asset exports a function." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Private message asset /message.js must export a function." "$ROOT_DIR/functions/private-message.js"; then
+  printf '%s\n' "private-message must return an explicit malformed private asset error." >&2
+  exit 1
+fi
+
 if ! grep -Fq "assets: null" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must cover a null Runtime asset map." >&2
+  exit 1
+fi
+
+if ! grep -Fq "non-function-message.js" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover malformed private asset exports." >&2
+  exit 1
+fi
+
+if ! grep -Fq "must export a function" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must assert the malformed private asset error." >&2
   exit 1
 fi
 
@@ -165,6 +187,11 @@ if ! grep -Fq "null Runtime asset map" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "malformed private asset export" "$README"; then
+  printf '%s\n' "README must document malformed private asset export coverage." >&2
+  exit 1
+fi
+
 if ! grep -Fq "workflow_dispatch" "$README"; then
   printf '%s\n' "README must document manual deployment workflow behavior." >&2
   exit 1
@@ -177,6 +204,16 @@ fi
 
 if ! grep -Fq "status: completed" "$LINT_PLAN"; then
   printf '%s\n' "Lint plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-export-guard.md"; then
+  printf '%s\n' "Private asset export guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-export-guard.md"; then
+  printf '%s\n' "Private asset export guard plan must record make check verification." >&2
   exit 1
 fi
 

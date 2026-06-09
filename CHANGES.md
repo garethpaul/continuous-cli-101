@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-09
+
+- Added an explicit callback error when the private `/message.js` asset does
+  not export the expected function.
+- Added local harness coverage and a fixture for malformed private asset
+  exports, plus source-baseline and README guardrails.
+
 ## 2026-06-08
 
 - Added `make check` as the root wrapper for lint, function tests, source

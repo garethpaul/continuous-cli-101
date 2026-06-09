@@ -114,6 +114,20 @@ async function run() {
     expectError: true
   });
   assert.strictEqual(nullAssetsError.message, "Private message asset /message.js is not available.");
+
+  const nonFunctionMessagePath = path.join(__dirname, "fixtures/non-function-message.js");
+  const nonFunctionAssetError = await invoke(privateMessage, {
+    assets: {
+      "/message.js": {
+        path: nonFunctionMessagePath
+      }
+    },
+    expectError: true
+  });
+  assert.strictEqual(
+    nonFunctionAssetError.message,
+    "Private message asset /message.js must export a function."
+  );
 }
 
 run()

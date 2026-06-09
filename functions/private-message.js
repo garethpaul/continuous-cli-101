@@ -8,6 +8,11 @@ exports.handler = function(context, event, callback) {
     }
 
     const privateMessage = require(privateMessageAsset.path);
+    if (typeof privateMessage !== 'function') {
+      callback(new Error('Private message asset /message.js must export a function.'));
+      return;
+    }
+
     const twiml = new Twilio.twiml.MessagingResponse();
     twiml.message(privateMessage());
     callback(null, twiml);
