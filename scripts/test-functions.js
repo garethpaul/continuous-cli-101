@@ -19,9 +19,11 @@ MessagingResponse.prototype.message = function message(body) {
 };
 
 MessagingResponse.prototype.toString = function toString() {
-  return this.messages.map(function renderMessage(body) {
-    return "<Response><Message>" + escapeXml(body) + "</Message></Response>";
+  const messages = this.messages.map(function renderMessage(body) {
+    return "<Message>" + escapeXml(body) + "</Message>";
   }).join("");
+
+  return "<Response>" + messages + "</Response>";
 };
 
 function invoke(handler, options) {
@@ -101,6 +103,14 @@ async function run() {
   assert.strictEqual(
     escapedResponse.toString(),
     "<Response><Message>A&amp;B &lt;C&gt; &quot;quote&quot; &apos;apostrophe&apos;</Message></Response>"
+  );
+
+  const multiMessageResponse = new MessagingResponse();
+  multiMessageResponse.message("First");
+  multiMessageResponse.message("Second");
+  assert.strictEqual(
+    multiMessageResponse.toString(),
+    "<Response><Message>First</Message><Message>Second</Message></Response>"
   );
 
   const smsResult = await invoke(smsReply);

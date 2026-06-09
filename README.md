@@ -85,6 +85,8 @@ a directory private asset path, and a malformed private asset export.
 It also covers blank private asset message output before it can reach TwiML.
 The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.
+It renders multiple local TwiML messages inside one Response envelope to keep
+the local test double aligned with Twilio's response shape.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the high-severity npm
@@ -113,6 +115,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Private `/message.js` assets must export a function that returns a non-empty
   string from a non-blank absolute file asset path before `private-message`
   adds it to TwiML.
+- The local TwiML harness keeps all message elements inside one response
+  envelope, including multi-message fixtures.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for maintenance history.
@@ -126,6 +130,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   asset file path validation.
 - See `docs/plans/2026-06-09-readme-contract-whitespace-guard.md` for
   line-wrap-tolerant README contract checks.
+- See `docs/plans/2026-06-09-twiml-response-envelope.md` for the local TwiML
+  response envelope baseline.
 - See `docs/plans/2026-06-08-continuous-cli-check-wrapper.md` for the root
   verification wrapper baseline.
 

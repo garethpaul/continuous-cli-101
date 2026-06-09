@@ -25,6 +25,7 @@ Priority:
 - Keep private asset module loading constrained to file paths
 - Keep private asset message output validated before TwiML rendering
 - Keep local TwiML harness output escaped like production XML
+- Keep local TwiML harness responses shaped like production XML envelopes
 - Make Node and Twilio CLI expectations explicit
 - Keep manual deploy tooling tied to package-lock-pinned dependencies
 - Keep lint, test, and audit gates useful in normal CI paths

@@ -12,6 +12,7 @@ PRIVATE_ASSET_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-path-guar
 PRIVATE_ASSET_ABSOLUTE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-absolute-path-guard.md"
 README_CONTRACT_WHITESPACE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readme-contract-whitespace-guard.md"
 PRIVATE_ASSET_FILE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-file-path-guard.md"
+TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-envelope.md"
 
 require_file() {
   path=$1
@@ -43,7 +44,8 @@ for path in \
   "docs/plans/2026-06-09-private-asset-absolute-path-guard.md" \
   "docs/plans/2026-06-09-private-asset-file-path-guard.md" \
   "docs/plans/2026-06-09-readme-contract-whitespace-guard.md" \
-  "docs/plans/2026-06-09-twiml-harness-escaping.md"; do
+  "docs/plans/2026-06-09-twiml-harness-escaping.md" \
+  "docs/plans/2026-06-09-twiml-response-envelope.md"; do
   require_file "$path"
 done
 
@@ -127,6 +129,12 @@ if ! grep -Fq "&amp;" "$ROOT_DIR/scripts/test-functions.js" ||
   ! grep -Fq "&quot;" "$ROOT_DIR/scripts/test-functions.js" ||
   ! grep -Fq "&apos;" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must cover XML entity escaping in TwiML output." >&2
+  exit 1
+fi
+
+if ! grep -Fq "multiMessageResponse" "$ROOT_DIR/scripts/test-functions.js" ||
+  ! grep -Fq "<Response><Message>First</Message><Message>Second</Message></Response>" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must cover multiple TwiML messages in one response envelope." >&2
   exit 1
 fi
 
@@ -315,6 +323,11 @@ if ! readme_has "XML-escapes local TwiML message"; then
   exit 1
 fi
 
+if ! readme_has "multiple local TwiML messages inside one Response envelope"; then
+  printf '%s\n' "README must document local TwiML response envelope coverage." >&2
+  exit 1
+fi
+
 if ! grep -Fq "workflow_dispatch" "$README"; then
   printf '%s\n' "README must document manual deployment workflow behavior." >&2
   exit 1
@@ -402,6 +415,16 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-twiml-harness-escaping.md"; then
   printf '%s\n' "TwiML harness escaping plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$TWIML_RESPONSE_ENVELOPE_PLAN"; then
+  printf '%s\n' "TwiML response envelope plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$TWIML_RESPONSE_ENVELOPE_PLAN"; then
+  printf '%s\n' "TwiML response envelope plan must record make check verification." >&2
   exit 1
 fi
 
