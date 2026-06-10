@@ -100,12 +100,14 @@ When the required SDK or runtime is unavailable, use static checks and source re
   secrets or local environment variables only.
 - GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
   deployment is only available through a manual `workflow_dispatch` run that
-  explicitly selects `confirm_deploy: true`.
+  explicitly selects `confirm_deploy: true` and only deploys from refs/heads/main.
 - The manual deploy job uses the package-lock-pinned deploy script instead of
   installing the latest global Twilio CLI and plugin during CI.
 - Deployment uses the `twilio-development` GitHub environment, serializes
   deploy runs, keeps repository permissions read-only, and does not persist the
   workflow token in the checkout.
+- Root Makefile targets run npm with the repository as their explicit prefix,
+  including out-of-tree `make -f` verification.
 
 ## Security and Privacy Notes
 
@@ -140,6 +142,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   verification wrapper baseline.
 - See `docs/plans/2026-06-10-twilio-deployment-safety.md` for the Node 22,
   dependency, and manual deployment safety baseline.
+- See `docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md` for the
+  default-branch deployment eligibility guard.
 
 ## Contributing
 

@@ -14,6 +14,7 @@ README_CONTRACT_WHITESPACE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readme-contract
 PRIVATE_ASSET_FILE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-file-path-guard.md"
 TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-envelope.md"
 DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety.md"
+DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 
 require_file() {
   path=$1
@@ -52,6 +53,8 @@ for path in \
   "docs/plans/2026-06-10-twilio-deployment-safety.md"; do
   require_file "$path"
 done
+
+require_file "docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
@@ -263,6 +266,7 @@ for workflow_contract in \
   'default: "false"' \
   "type: choice" \
   "inputs.confirm_deploy == 'true'" \
+  "github.ref == 'refs/heads/main'" \
   "environment: twilio-development" \
   "group: twilio-development" \
   "cancel-in-progress: false"; do
@@ -271,6 +275,11 @@ for workflow_contract in \
     exit 1
   fi
 done
+
+if [ "$(grep -Fc "runs-on: ubuntu-24.04" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must use the stable Ubuntu 24.04 runner image." >&2
+  exit 1
+fi
 
 if [ "$(grep -Fc "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$WORKFLOW")" -ne 2 ]; then
   printf '%s\n' "Both workflow jobs must use the pinned checkout action." >&2
@@ -295,6 +304,18 @@ fi
 
 if ! grep -Fq "docs/plans/2026-06-10-twilio-deployment-safety.md" "$README"; then
   printf '%s\n' "README must link the Twilio deployment safety plan." >&2
+  exit 1
+fi
+
+if ! grep -Fq "only deploys from refs/heads/main" "$README"; then
+  printf '%s\n' "README must document the main-branch deployment guard." >&2
+  exit 1
+fi
+
+if [ ! -f "$ROOT_DIR/Makefile" ] || \
+   ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
+   [ "$(grep -Fc '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile")" -ne 4 ]; then
+  printf '%s\n' "Makefile must root all npm verification targets at the repository." >&2
   exit 1
 fi
 
@@ -493,6 +514,12 @@ fi
 
 if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-message-text-guard.md"; then
   printf '%s\n' "Private asset message text guard plan must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$DEPLOYMENT_REF_PLAN" || \
+   ! grep -Fq "npm run verify" "$DEPLOYMENT_REF_PLAN"; then
+  printf '%s\n' "Main-branch deployment guard plan must record completed verification." >&2
   exit 1
 fi
 

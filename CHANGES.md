@@ -2,6 +2,10 @@
 
 ## 2026-06-10
 
+- Restricted confirmed manual Twilio deployments to `refs/heads/main` while
+  preserving verification on other refs.
+- Made Makefile npm commands location-independent and pinned both workflow jobs
+  to the stable Ubuntu 24.04 runner image.
 - Pin GitHub Actions to immutable commits and declare read-only repository
   permissions plus bounded job timeouts.
 - Require explicit confirmation before the manual Twilio deploy job can run,

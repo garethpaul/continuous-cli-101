@@ -30,6 +30,7 @@ Priority:
 - Keep manual deploy tooling tied to package-lock-pinned dependencies
 - Keep Twilio deployment behind explicit confirmation, a named environment,
   and serialized execution
+- Keep credentialed deployment restricted to the default branch ref
 - Keep workflow actions commit-pinned and repository access read-only
 - Keep lint, test, and audit gates useful in normal CI paths
 
