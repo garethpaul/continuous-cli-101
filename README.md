@@ -33,7 +33,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Node.js 20, matching `.nvmrc`
+- Node.js 22, matching `.nvmrc`
 - npm
 
 ### Setup
@@ -52,7 +52,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 Detected npm scripts:
 
-- `npm run audit` - `npm audit --audit-level=high`
+- `npm run audit` - `npm audit --audit-level=moderate`
 - `npm run check` - `scripts/check-baseline.sh`
 - `npm run deploy` - `twilio-run deploy`
 - `npm run lint` - `eslint assets functions scripts --max-warnings=0`
@@ -89,7 +89,7 @@ It renders multiple local TwiML messages inside one Response envelope to keep
 the local test double aligned with Twilio's response shape.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
-`npm run verify` runs lint, tests, source checks, and the high-severity npm
+`npm run verify` runs lint, tests, source checks, and the moderate-severity npm
 audit gate in the same order used by CI.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -99,9 +99,13 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
   secrets or local environment variables only.
 - GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
-  deployment is only available through a manual `workflow_dispatch` run.
+  deployment is only available through a manual `workflow_dispatch` run that
+  explicitly selects `confirm_deploy: true`.
 - The manual deploy job uses the package-lock-pinned deploy script instead of
   installing the latest global Twilio CLI and plugin during CI.
+- Deployment uses the `twilio-development` GitHub environment, serializes
+  deploy runs, keeps repository permissions read-only, and does not persist the
+  workflow token in the checkout.
 
 ## Security and Privacy Notes
 
@@ -134,6 +138,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   response envelope baseline.
 - See `docs/plans/2026-06-08-continuous-cli-check-wrapper.md` for the root
   verification wrapper baseline.
+- See `docs/plans/2026-06-10-twilio-deployment-safety.md` for the Node 22,
+  dependency, and manual deployment safety baseline.
 
 ## Contributing
 

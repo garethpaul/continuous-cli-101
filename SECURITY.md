@@ -32,6 +32,9 @@ Helpful reports include:
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Review found infrastructure, deployment, proxy, or cloud configuration; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: package.json, package-lock.json. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
+- GitHub Actions uses commit-pinned actions, read-only repository permissions,
+  non-persisted checkout credentials, bounded jobs, and explicit manual
+  confirmation before the Twilio development deploy can run.
 
 ## Service and API Notes
 

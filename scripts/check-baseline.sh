@@ -13,6 +13,7 @@ PRIVATE_ASSET_ABSOLUTE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-
 README_CONTRACT_WHITESPACE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-readme-contract-whitespace-guard.md"
 PRIVATE_ASSET_FILE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-file-path-guard.md"
 TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-envelope.md"
+DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety.md"
 
 require_file() {
   path=$1
@@ -26,6 +27,8 @@ for path in \
   ".nvmrc" \
   "eslint.config.js" \
   "README.md" \
+  "SECURITY.md" \
+  "VISION.md" \
   "package.json" \
   "package-lock.json" \
   ".github/workflows/main.yml" \
@@ -45,32 +48,33 @@ for path in \
   "docs/plans/2026-06-09-private-asset-file-path-guard.md" \
   "docs/plans/2026-06-09-readme-contract-whitespace-guard.md" \
   "docs/plans/2026-06-09-twiml-harness-escaping.md" \
-  "docs/plans/2026-06-09-twiml-response-envelope.md"; do
+  "docs/plans/2026-06-09-twiml-response-envelope.md" \
+  "docs/plans/2026-06-10-twilio-deployment-safety.md"; do
   require_file "$path"
 done
 
-if ! grep -Fxq "20" "$ROOT_DIR/.nvmrc"; then
-  printf '%s\n' ".nvmrc must pin the Node 20 baseline required by twilio-run 5.x." >&2
+if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
+  printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
   exit 1
 fi
 
-if ! grep -Fq '"node": "20"' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json engines must pin Node 20." >&2
+if ! grep -Fq '"node": "^22.13.0"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json engines must require the supported Node 22 baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq '"twilio-run": "^5.0.1"' "$PACKAGE_JSON"; then
+if ! grep -Fq '"twilio-run": "5.0.1"' "$PACKAGE_JSON"; then
   printf '%s\n' "package.json must keep the twilio-run 5.x baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq '"twilio-run": "^5.0.1"' "$PACKAGE_LOCK"; then
+if ! grep -Fq '"twilio-run": "5.0.1"' "$PACKAGE_LOCK"; then
   printf '%s\n' "package-lock.json must match the twilio-run package baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq '"eslint": "^9.' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json must keep the ESLint 9.x lint baseline." >&2
+if ! grep -Fq '"eslint": "10.4.1"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must keep the ESLint 10.4.1 lint baseline." >&2
   exit 1
 fi
 
@@ -89,13 +93,13 @@ if ! grep -Fq '"verify": "npm run lint && npm test && npm run check && npm run a
   exit 1
 fi
 
-if ! grep -Fq '"audit": "npm audit --audit-level=high"' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json must expose the high-severity audit script." >&2
+if ! grep -Fq '"audit": "npm audit --audit-level=moderate"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must expose the moderate-severity audit script." >&2
   exit 1
 fi
 
 if ! grep -Fq "npm run audit" "$README"; then
-  printf '%s\n' "README must document the high-severity audit gate." >&2
+  printf '%s\n' "README must document the moderate-severity audit gate." >&2
   exit 1
 fi
 
@@ -247,6 +251,64 @@ if grep -Fq "TWILIO_ACCOUNT_SID" "$WORKFLOW" && ! grep -Fq "github.event_name ==
   exit 1
 fi
 
+for workflow_contract in \
+  "permissions:" \
+  "contents: read" \
+  "timeout-minutes: 10" \
+  "timeout-minutes: 15" \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" \
+  "persist-credentials: false" \
+  "confirm_deploy:" \
+  'default: "false"' \
+  "type: choice" \
+  "inputs.confirm_deploy == 'true'" \
+  "environment: twilio-development" \
+  "group: twilio-development" \
+  "cancel-in-progress: false"; do
+  if ! grep -Fq "$workflow_contract" "$WORKFLOW"; then
+    printf '%s\n' "Workflow must keep deployment safety contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must use the pinned checkout action." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must use the pinned setup-node action." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "persist-credentials: false" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must avoid persisting GitHub credentials." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$DEPLOYMENT_SAFETY_PLAN" ||
+  ! grep -Fq "npm run verify" "$DEPLOYMENT_SAFETY_PLAN"; then
+  printf '%s\n' "Deployment safety plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "docs/plans/2026-06-10-twilio-deployment-safety.md" "$README"; then
+  printf '%s\n' "README must link the Twilio deployment safety plan." >&2
+  exit 1
+fi
+
+if ! grep -Fq "commit-pinned actions" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "explicit confirmation" "$ROOT_DIR/VISION.md"; then
+  printf '%s\n' "Security and vision docs must preserve the deployment safety boundary." >&2
+  exit 1
+fi
+
+if grep -Eq '^[[:space:]]+[A-Za-z-]+:[[:space:]]+write$' "$WORKFLOW"; then
+  printf '%s\n' "Workflow must not grant write permissions." >&2
+  exit 1
+fi
+
 if grep -Fq "npm install --global twilio-cli" "$WORKFLOW" || grep -Fq "twilio plugins:install" "$WORKFLOW"; then
   printf '%s\n' "Workflow deploy must use the package-lock-pinned twilio-run script instead of global Twilio CLI installs." >&2
   exit 1
@@ -262,20 +324,21 @@ if ! grep -Fq "npm run verify" "$WORKFLOW"; then
   exit 1
 fi
 
-if ! grep -Fq "actions/checkout@v4" "$WORKFLOW"; then
-  printf '%s\n' "Workflow must use the current checkout action baseline." >&2
-  exit 1
-fi
-
-if ! grep -Fq "actions/setup-node@v4" "$WORKFLOW"; then
-  printf '%s\n' "Workflow must use the current setup-node action baseline." >&2
-  exit 1
-fi
-
 if ! grep -Fq "node-version-file: .nvmrc" "$WORKFLOW"; then
   printf '%s\n' "Workflow must read Node version from .nvmrc." >&2
   exit 1
 fi
+
+for package_contract in \
+  '"@eslint/js": "10.0.1"' \
+  '"eslint": "10.4.1"' \
+  '"twilio-run": "5.0.1"' \
+  '"audit": "npm audit --audit-level=moderate"'; do
+  if ! grep -Fq "$package_contract" "$ROOT_DIR/package.json"; then
+    printf '%s\n' "package.json must keep contract: $package_contract" >&2
+    exit 1
+  fi
+done
 
 README_TEXT=$(tr '\n' ' ' < "$README")
 

@@ -28,6 +28,9 @@ Priority:
 - Keep local TwiML harness responses shaped like production XML envelopes
 - Make Node and Twilio CLI expectations explicit
 - Keep manual deploy tooling tied to package-lock-pinned dependencies
+- Keep Twilio deployment behind explicit confirmation, a named environment,
+  and serialized execution
+- Keep workflow actions commit-pinned and repository access read-only
 - Keep lint, test, and audit gates useful in normal CI paths
 
 Next priorities:
