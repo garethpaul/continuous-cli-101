@@ -89,7 +89,7 @@ It renders multiple local TwiML messages inside one Response envelope to keep
 the local test double aligned with Twilio's response shape.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
-`npm run verify` runs lint, tests, source checks, and the high-severity npm
+`npm run verify` runs lint, tests, source checks, and the moderate-severity npm
 audit gate in the same order used by CI.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -99,9 +99,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
   secrets or local environment variables only.
 - GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
-  deployment is only available through a manual `workflow_dispatch` run.
+  deployment is only available through a manual `workflow_dispatch` run that
+  explicitly selects `confirm_deploy: true`.
 - The manual deploy job uses the package-lock-pinned deploy script instead of
   installing the latest global Twilio CLI and plugin during CI.
+- Deployment uses the `twilio-development` GitHub environment, serializes
+  deploy runs, and keeps repository permissions read-only.
 
 ## Security and Privacy Notes
 

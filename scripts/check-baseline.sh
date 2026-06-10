@@ -59,18 +59,18 @@ if ! grep -Fq '"node": "20"' "$PACKAGE_JSON"; then
   exit 1
 fi
 
-if ! grep -Fq '"twilio-run": "^5.0.1"' "$PACKAGE_JSON"; then
+if ! grep -Fq '"twilio-run": "5.0.1"' "$PACKAGE_JSON"; then
   printf '%s\n' "package.json must keep the twilio-run 5.x baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq '"twilio-run": "^5.0.1"' "$PACKAGE_LOCK"; then
+if ! grep -Fq '"twilio-run": "5.0.1"' "$PACKAGE_LOCK"; then
   printf '%s\n' "package-lock.json must match the twilio-run package baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq '"eslint": "^9.' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json must keep the ESLint 9.x lint baseline." >&2
+if ! grep -Fq '"eslint": "10.4.1"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must keep the ESLint 10.4.1 lint baseline." >&2
   exit 1
 fi
 
@@ -89,8 +89,8 @@ if ! grep -Fq '"verify": "npm run lint && npm test && npm run check && npm run a
   exit 1
 fi
 
-if ! grep -Fq '"audit": "npm audit --audit-level=high"' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json must expose the high-severity audit script." >&2
+if ! grep -Fq '"audit": "npm audit --audit-level=moderate"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must expose the moderate-severity audit script." >&2
   exit 1
 fi
 
@@ -247,6 +247,41 @@ if grep -Fq "TWILIO_ACCOUNT_SID" "$WORKFLOW" && ! grep -Fq "github.event_name ==
   exit 1
 fi
 
+for workflow_contract in \
+  "permissions:" \
+  "contents: read" \
+  "timeout-minutes: 10" \
+  "timeout-minutes: 15" \
+  "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" \
+  "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" \
+  "confirm_deploy:" \
+  'default: "false"' \
+  "type: choice" \
+  "inputs.confirm_deploy == 'true'" \
+  "environment: twilio-development" \
+  "group: twilio-development" \
+  "cancel-in-progress: false"; do
+  if ! grep -Fq "$workflow_contract" "$WORKFLOW"; then
+    printf '%s\n' "Workflow must keep deployment safety contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must use the pinned checkout action." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020" "$WORKFLOW")" -ne 2 ]; then
+  printf '%s\n' "Both workflow jobs must use the pinned setup-node action." >&2
+  exit 1
+fi
+
+if grep -Eq '^[[:space:]]+[A-Za-z-]+:[[:space:]]+write$' "$WORKFLOW"; then
+  printf '%s\n' "Workflow must not grant write permissions." >&2
+  exit 1
+fi
+
 if grep -Fq "npm install --global twilio-cli" "$WORKFLOW" || grep -Fq "twilio plugins:install" "$WORKFLOW"; then
   printf '%s\n' "Workflow deploy must use the package-lock-pinned twilio-run script instead of global Twilio CLI installs." >&2
   exit 1
@@ -262,20 +297,21 @@ if ! grep -Fq "npm run verify" "$WORKFLOW"; then
   exit 1
 fi
 
-if ! grep -Fq "actions/checkout@v4" "$WORKFLOW"; then
-  printf '%s\n' "Workflow must use the current checkout action baseline." >&2
-  exit 1
-fi
-
-if ! grep -Fq "actions/setup-node@v4" "$WORKFLOW"; then
-  printf '%s\n' "Workflow must use the current setup-node action baseline." >&2
-  exit 1
-fi
-
 if ! grep -Fq "node-version-file: .nvmrc" "$WORKFLOW"; then
   printf '%s\n' "Workflow must read Node version from .nvmrc." >&2
   exit 1
 fi
+
+for package_contract in \
+  '"@eslint/js": "10.0.1"' \
+  '"eslint": "10.4.1"' \
+  '"twilio-run": "5.0.1"' \
+  '"audit": "npm audit --audit-level=moderate"'; do
+  if ! grep -Fq "$package_contract" "$ROOT_DIR/package.json"; then
+    printf '%s\n' "package.json must keep contract: $package_contract" >&2
+    exit 1
+  fi
+done
 
 README_TEXT=$(tr '\n' ' ' < "$README")
 

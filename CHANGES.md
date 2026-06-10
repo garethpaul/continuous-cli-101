@@ -1,5 +1,14 @@
 # Changes
 
+## 2026-06-10
+
+- Pin GitHub Actions to immutable commits and declare read-only repository
+  permissions plus bounded job timeouts.
+- Require explicit confirmation before the manual Twilio deploy job can run,
+  scope it to the `twilio-development` environment, and serialize deployments.
+- Upgrade ESLint to 10.4.1, declare `@eslint/js` directly, pin `twilio-run`, and
+  raise the npm audit gate from high to moderate severity.
+
 ## 2026-06-09
 
 - Updated the local TwiML test double to render multiple messages inside one

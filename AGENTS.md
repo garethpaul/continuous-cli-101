@@ -51,7 +51,8 @@
 ## Safety and gotchas
 
 - Twilio account SIDs, API keys, and API secrets must live in GitHub Actions secrets or local environment variables only.
-- GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio deployment is only available through a manual `workflow_dispatch` run.
+- GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio deployment requires a manual `workflow_dispatch` run with `confirm_deploy: true`.
+- Deployment is scoped to the `twilio-development` GitHub environment and serialized to prevent overlapping releases.
 - The manual deploy job uses the package-lock-pinned deploy script instead of installing the latest global Twilio CLI and plugin during CI.
 - Manual Twilio deployment should continue to call the package-lock-pinned `npm run deploy` script from the workflow.
 - Private `/message.js` assets must export a function that returns a non-empty string from a non-blank absolute file asset path before `private-message` adds it to TwiML.
