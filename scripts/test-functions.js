@@ -88,11 +88,9 @@ function invoke(handler, options) {
   });
 }
 
-function invokeWithThrowingCallback(handler, options) {
+function withRuntimeGlobals(options, operation) {
   const previousTwilio = global.Twilio;
   const previousRuntime = global.Runtime;
-  const callbackFailure = new Error("Callback failure sentinel.");
-  const calls = [];
 
   global.Twilio = {
     twiml: {
@@ -106,14 +104,7 @@ function invokeWithThrowingCallback(handler, options) {
   };
 
   try {
-    assert.throws(function invokeHandler() {
-      handler({}, {}, function throwingCallback(error, result) {
-        calls.push({error: error, result: result});
-        throw callbackFailure;
-      });
-    }, function isCallbackFailure(error) {
-      return error === callbackFailure;
-    });
+    return operation();
   } finally {
     if (previousTwilio === undefined) {
       delete global.Twilio;
@@ -127,6 +118,34 @@ function invokeWithThrowingCallback(handler, options) {
       global.Runtime = previousRuntime;
     }
   }
+}
+
+function invokeWithThrowingCallback(handler, options) {
+  const callbackFailure = new Error("Callback failure sentinel.");
+  const calls = [];
+
+  withRuntimeGlobals(options, function invokeWithGlobals() {
+    assert.throws(function invokeHandler() {
+      handler({}, {}, function throwingCallback(error, result) {
+        calls.push({error: error, result: result});
+        throw callbackFailure;
+      });
+    }, function isCallbackFailure(error) {
+      return error === callbackFailure;
+    });
+  });
+
+  return calls;
+}
+
+function invokeWithRecordingCallback(handler, options) {
+  const calls = [];
+
+  withRuntimeGlobals(options, function invokeWithGlobals() {
+    handler({}, {}, function recordingCallback(error, result) {
+      calls.push({error: error, result: result});
+    });
+  });
 
   return calls;
 }
@@ -193,6 +212,14 @@ async function run() {
     "Private message asset /message.js is not available."
   );
   assert.strictEqual(throwingErrorCalls[0].result, undefined);
+
+  const recordingErrorCalls = invokeWithRecordingCallback(privateMessage, {assets: {}});
+  assert.strictEqual(recordingErrorCalls.length, 1);
+  assert.strictEqual(
+    recordingErrorCalls[0].error.message,
+    "Private message asset /message.js is not available."
+  );
+  assert.strictEqual(recordingErrorCalls[0].result, undefined);
 
   const missingAssetError = await invoke(privateMessage, {
     assets: {},

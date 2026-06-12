@@ -16,6 +16,8 @@ TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-env
 DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety.md"
 DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-completion.md"
+EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
+trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
 require_file() {
   path=$1
@@ -176,8 +178,14 @@ fi
 catch_line=$(grep -Fn "  } catch (error) {" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
 error_callback_line=$(grep -Fn "    callback(error);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
 success_callback_line=$(grep -Fn "  callback(null, twiml);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+error_completion=$(awk '/^  } catch \(error\) \{$/,/^  }$/' "$ROOT_DIR/functions/private-message.js")
+expected_error_completion='  } catch (error) {
+    callback(error);
+    return;
+  }'
 
-if [ "$catch_line" -ge "$error_callback_line" ] || [ "$error_callback_line" -ge "$success_callback_line" ]; then
+if [ "$catch_line" -ge "$error_callback_line" ] || [ "$error_callback_line" -ge "$success_callback_line" ] || \
+   [ "$error_completion" != "$expected_error_completion" ]; then
   printf '%s\n' "private-message success completion must remain outside the error catch boundary." >&2
   exit 1
 fi
@@ -186,6 +194,12 @@ if ! grep -Fq "function invokeWithThrowingCallback" "$ROOT_DIR/scripts/test-func
    ! grep -Fq "throwingSuccessCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js" || \
    ! grep -Fq "throwingErrorCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must prove throwing success and error callbacks complete exactly once." >&2
+  exit 1
+fi
+
+if ! grep -Fq "function invokeWithRecordingCallback" "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq "recordingErrorCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must prove a non-throwing error callback completes exactly once." >&2
   exit 1
 fi
 
@@ -325,6 +339,80 @@ if [ "$(grep -Fc "persist-credentials: false" "$WORKFLOW")" -ne 2 ]; then
   exit 1
 fi
 
+cat > "$EXPECTED_WORKFLOW" <<'EOF'
+name: Twilio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      confirm_deploy:
+        description: Confirm deployment to the Twilio development environment
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  deploy:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && inputs.confirm_deploy == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: twilio-development
+    concurrency:
+      group: twilio-development
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Deploy Twilio Serverless service
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_API_KEY: ${{ secrets.TWILIO_API_KEY }}
+          TWILIO_API_SECRET: ${{ secrets.TWILIO_API_SECRET }}
+        run: npm run deploy -- --service-name=example-deployed-with-github-actions --environment=dev --force
+EOF
+
+workflow_paths=$(find "$ROOT_DIR/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
+if [ "$workflow_paths" != "$WORKFLOW" ]; then
+  printf '%s\n' "main.yml must remain the only approved GitHub Actions workflow." >&2
+  exit 1
+fi
+
+if ! cmp -s "$WORKFLOW" "$EXPECTED_WORKFLOW"; then
+  printf '%s\n' "Twilio CI must match the approved verification and manual-deployment policy." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Status: Completed" "$DEPLOYMENT_SAFETY_PLAN" ||
   ! grep -Fq "npm run verify" "$DEPLOYMENT_SAFETY_PLAN"; then
   printf '%s\n' "Deployment safety plan must record completed verification." >&2
@@ -441,7 +529,8 @@ if ! readme_has "multiple local TwiML messages inside one Response envelope"; th
   exit 1
 fi
 
-if ! readme_has "throwing success and error callbacks are each invoked once"; then
+if ! readme_has "non-throwing error callbacks complete once without falling through to the success callback" || \
+   ! readme_has "Throwing success and error callbacks also propagate their sentinel after one completion"; then
   printf '%s\n' "README must document private-message single-completion coverage." >&2
   exit 1
 fi
