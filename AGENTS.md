@@ -32,7 +32,7 @@
 ## Coding conventions
 
 - Language mix noted in the README: JavaScript (4).
-- Use Node 20 for package scripts.
+- Use Node 22 for package scripts.
 - ESLint is configured; keep lint fixes in source instead of generated output.
 
 ## Testing guidance

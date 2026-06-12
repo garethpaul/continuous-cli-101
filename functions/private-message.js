@@ -12,6 +12,8 @@ function isReadableFile(assetPath) {
 }
 
 exports.handler = function(context, event, callback) {
+  let twiml;
+
   try {
     const assets = Runtime.getAssets();
     const privateMessageAsset = assets && assets['/message.js'];
@@ -19,26 +21,25 @@ exports.handler = function(context, event, callback) {
         privateMessageAsset.path.trim() === '' ||
         !path.isAbsolute(privateMessageAsset.path) ||
         !isReadableFile(privateMessageAsset.path)) {
-      callback(new Error('Private message asset /message.js is not available.'));
-      return;
+      throw new Error('Private message asset /message.js is not available.');
     }
 
     const privateMessage = require(privateMessageAsset.path);
     if (typeof privateMessage !== 'function') {
-      callback(new Error('Private message asset /message.js must export a function.'));
-      return;
+      throw new Error('Private message asset /message.js must export a function.');
     }
 
     const message = privateMessage();
     if (typeof message !== 'string' || message.trim() === '') {
-      callback(new Error('Private message asset /message.js must return a non-empty string.'));
-      return;
+      throw new Error('Private message asset /message.js must return a non-empty string.');
     }
 
-    const twiml = new Twilio.twiml.MessagingResponse();
+    twiml = new Twilio.twiml.MessagingResponse();
     twiml.message(message);
-    callback(null, twiml);
   } catch (error) {
     callback(error);
+    return;
   }
+
+  callback(null, twiml);
 };

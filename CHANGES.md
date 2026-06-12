@@ -1,13 +1,30 @@
 # Changes
 
+## 2026-06-12
+
+- Refactored `private-message` validation to flow through one error completion
+  site and moved successful completion outside the catchable computation block.
+- Added regression coverage proving throwing success and error callbacks are
+  each invoked exactly once.
+- Covered non-throwing error callbacks so a missing return cannot fall through
+  into a second success completion.
+- Required one canonical Twilio workflow and rejected additional workflow files.
+
 ## 2026-06-10
 
+- Restricted confirmed manual Twilio deployments to `refs/heads/main` while
+  preserving verification on other refs.
+- Made Makefile npm commands location-independent and pinned both workflow jobs
+  to the stable Ubuntu 24.04 runner image.
 - Pin GitHub Actions to immutable commits and declare read-only repository
   permissions plus bounded job timeouts.
 - Require explicit confirmation before the manual Twilio deploy job can run,
   scope it to the `twilio-development` environment, and serialize deployments.
 - Upgrade ESLint to 10.4.1, declare `@eslint/js` directly, pin `twilio-run`, and
   raise the npm audit gate from high to moderate severity.
+- Move the supported runtime from Node 20 to Node 22 and update checkout and
+  Node setup actions to current immutable v6 commits without persisted Git
+  credentials.
 
 ## 2026-06-09
 

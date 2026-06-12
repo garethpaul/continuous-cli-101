@@ -88,6 +88,68 @@ function invoke(handler, options) {
   });
 }
 
+function withRuntimeGlobals(options, operation) {
+  const previousTwilio = global.Twilio;
+  const previousRuntime = global.Runtime;
+
+  global.Twilio = {
+    twiml: {
+      MessagingResponse: MessagingResponse
+    }
+  };
+  global.Runtime = {
+    getAssets: function getAssets() {
+      return options.assets;
+    }
+  };
+
+  try {
+    return operation();
+  } finally {
+    if (previousTwilio === undefined) {
+      delete global.Twilio;
+    } else {
+      global.Twilio = previousTwilio;
+    }
+
+    if (previousRuntime === undefined) {
+      delete global.Runtime;
+    } else {
+      global.Runtime = previousRuntime;
+    }
+  }
+}
+
+function invokeWithThrowingCallback(handler, options) {
+  const callbackFailure = new Error("Callback failure sentinel.");
+  const calls = [];
+
+  withRuntimeGlobals(options, function invokeWithGlobals() {
+    assert.throws(function invokeHandler() {
+      handler({}, {}, function throwingCallback(error, result) {
+        calls.push({error: error, result: result});
+        throw callbackFailure;
+      });
+    }, function isCallbackFailure(error) {
+      return error === callbackFailure;
+    });
+  });
+
+  return calls;
+}
+
+function invokeWithRecordingCallback(handler, options) {
+  const calls = [];
+
+  withRuntimeGlobals(options, function invokeWithGlobals() {
+    handler({}, {}, function recordingCallback(error, result) {
+      calls.push({error: error, result: result});
+    });
+  });
+
+  return calls;
+}
+
 async function run() {
   const helloWorld = require("../functions/hello-world").handler;
   const privateMessage = require("../functions/private-message").handler;
@@ -128,6 +190,36 @@ async function run() {
     privateResult.toString(),
     "<Response><Message>This is private!</Message></Response>"
   );
+
+  const throwingSuccessCalls = invokeWithThrowingCallback(privateMessage, {
+    assets: {
+      "/message.js": {
+        path: privateMessagePath
+      }
+    }
+  });
+  assert.strictEqual(throwingSuccessCalls.length, 1);
+  assert.strictEqual(throwingSuccessCalls[0].error, null);
+  assert.strictEqual(
+    throwingSuccessCalls[0].result.toString(),
+    "<Response><Message>This is private!</Message></Response>"
+  );
+
+  const throwingErrorCalls = invokeWithThrowingCallback(privateMessage, {assets: {}});
+  assert.strictEqual(throwingErrorCalls.length, 1);
+  assert.strictEqual(
+    throwingErrorCalls[0].error.message,
+    "Private message asset /message.js is not available."
+  );
+  assert.strictEqual(throwingErrorCalls[0].result, undefined);
+
+  const recordingErrorCalls = invokeWithRecordingCallback(privateMessage, {assets: {}});
+  assert.strictEqual(recordingErrorCalls.length, 1);
+  assert.strictEqual(
+    recordingErrorCalls[0].error.message,
+    "Private message asset /message.js is not available."
+  );
+  assert.strictEqual(recordingErrorCalls[0].result, undefined);
 
   const missingAssetError = await invoke(privateMessage, {
     assets: {},

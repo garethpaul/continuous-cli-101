@@ -33,7 +33,7 @@ Additional scan context:
 ### Prerequisites
 
 - Git
-- Node.js 20, matching `.nvmrc`
+- Node.js 22, matching `.nvmrc`
 - npm
 
 ### Setup
@@ -52,7 +52,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 Detected npm scripts:
 
-- `npm run audit` - `npm audit --audit-level=high`
+- `npm run audit` - `npm audit --audit-level=moderate`
 - `npm run check` - `scripts/check-baseline.sh`
 - `npm run deploy` - `twilio-run deploy`
 - `npm run lint` - `eslint assets functions scripts --max-warnings=0`
@@ -87,6 +87,9 @@ The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.
 It renders multiple local TwiML messages inside one Response envelope to keep
 the local test double aligned with Twilio's response shape.
+It verifies that non-throwing error callbacks complete once without falling
+through to the success callback. Throwing success and error callbacks also
+propagate their sentinel after one completion.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm
@@ -100,11 +103,14 @@ When the required SDK or runtime is unavailable, use static checks and source re
   secrets or local environment variables only.
 - GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
   deployment is only available through a manual `workflow_dispatch` run that
-  explicitly selects `confirm_deploy: true`.
+  explicitly selects `confirm_deploy: true` and only deploys from refs/heads/main.
 - The manual deploy job uses the package-lock-pinned deploy script instead of
   installing the latest global Twilio CLI and plugin during CI.
 - Deployment uses the `twilio-development` GitHub environment, serializes
-  deploy runs, and keeps repository permissions read-only.
+  deploy runs, keeps repository permissions read-only, and does not persist the
+  workflow token in the checkout.
+- Root Makefile targets run npm with the repository as their explicit prefix,
+  including out-of-tree `make -f` verification.
 
 ## Security and Privacy Notes
 
@@ -118,6 +124,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Private `/message.js` assets must export a function that returns a non-empty
   string from a non-blank absolute file asset path before `private-message`
   adds it to TwiML.
+- `private-message` computes its result before completing, with one error and
+  one success callback site outside each other's exception boundary.
 - The local TwiML harness keeps all message elements inside one response
   envelope, including multi-message fixtures.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
@@ -137,6 +145,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
   response envelope baseline.
 - See `docs/plans/2026-06-08-continuous-cli-check-wrapper.md` for the root
   verification wrapper baseline.
+- See `docs/plans/2026-06-10-twilio-deployment-safety.md` for the Node 22,
+  dependency, and manual deployment safety baseline.
+- See `docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md` for the
+  default-branch deployment eligibility guard.
 
 ## Contributing
 
