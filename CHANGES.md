@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Added pinned CodeQL analysis for GitHub Actions and Twilio JavaScript without
+  broadening the manual deployment or secret boundary.
 - Refactored `private-message` validation to flow through one error completion
   site and moved successful completion outside the catchable computation block.
 - Added regression coverage proving throwing success and error callbacks are

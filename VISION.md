@@ -33,6 +33,7 @@ Priority:
   and serialized execution
 - Keep credentialed deployment restricted to the default branch ref
 - Keep workflow actions commit-pinned and repository access read-only
+- Keep pinned CodeQL coverage for Actions and Twilio JavaScript
 - Keep lint, test, and audit gates useful in normal CI paths
 
 Next priorities:

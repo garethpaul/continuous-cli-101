@@ -16,8 +16,10 @@ TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-env
 DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety.md"
 DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-completion.md"
+CODEQL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-codeql-baseline.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
-trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
+EXPECTED_CODEQL=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-codeql.XXXXXX")
+trap 'rm -f "$EXPECTED_WORKFLOW" "$EXPECTED_CODEQL"' EXIT HUP INT TERM
 
 require_file() {
   path=$1
@@ -36,6 +38,7 @@ for path in \
   "package.json" \
   "package-lock.json" \
   ".github/workflows/main.yml" \
+  ".github/workflows/codeql.yml" \
   "CHANGES.md" \
   "assets/message.private.js" \
   "functions/hello-world.js" \
@@ -59,6 +62,7 @@ done
 
 require_file "docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 require_file "docs/plans/2026-06-12-private-message-single-completion.md"
+require_file "docs/plans/2026-06-12-codeql-baseline.md"
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
@@ -402,9 +406,70 @@ jobs:
         run: npm run deploy -- --service-name=example-deployed-with-github-actions --environment=dev --force
 EOF
 
+cat > "$EXPECTED_CODEQL" <<'EOF'
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '47 5 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
+EOF
+
 workflow_paths=$(find "$ROOT_DIR/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) -print | sort)
-if [ "$workflow_paths" != "$WORKFLOW" ]; then
-  printf '%s\n' "main.yml must remain the only approved GitHub Actions workflow." >&2
+expected_workflow_paths=$(printf '%s\n' "$WORKFLOW" "$ROOT_DIR/.github/workflows/codeql.yml" | sort)
+if [ "$workflow_paths" != "$expected_workflow_paths" ]; then
+  printf '%s\n' "Only the canonical Twilio CI and CodeQL workflows are approved." >&2
+  exit 1
+fi
+
+if ! cmp -s "$ROOT_DIR/.github/workflows/codeql.yml" "$EXPECTED_CODEQL"; then
+  printf '%s\n' "CodeQL must match the canonical pinned two-language baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$CODEQL_PLAN" || \
+   ! grep -Fq "make check" "$CODEQL_PLAN" || \
+   ! grep -Fq "external working directory" "$CODEQL_PLAN" || \
+   ! grep -Fq "hostile mutations rejected" "$CODEQL_PLAN"; then
+  printf '%s\n' "CodeQL plan must record completed local verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "CodeQL analyzes" "$README" || \
+   ! grep -Fq "CodeQL results" "$ROOT_DIR/SECURITY.md" || \
+   ! grep -Fq "CodeQL coverage" "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq "CodeQL analysis" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Repository guidance must document CodeQL coverage." >&2
   exit 1
 fi
 
