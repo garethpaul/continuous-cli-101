@@ -42,7 +42,7 @@ For web services, APIs, sockets, or scraping workflows, prioritize reports invol
 
 ## Dependency and Supply Chain Security
 
-CodeQL results cover GitHub Actions and the Twilio JavaScript functions/assets.
+CodeQL default-setup results cover GitHub Actions and the Twilio JavaScript functions/assets.
 Triage findings without weakening the exact manual deployment policy or
 exposing deployment secrets to verification jobs.
 
