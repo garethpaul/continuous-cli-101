@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-12
+
+- Refactored `private-message` validation to flow through one error completion
+  site and moved successful completion outside the catchable computation block.
+- Added regression coverage proving throwing success and error callbacks are
+  each invoked exactly once.
+
 ## 2026-06-10
 
 - Restricted confirmed manual Twilio deployments to `refs/heads/main` while

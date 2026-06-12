@@ -87,6 +87,8 @@ The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.
 It renders multiple local TwiML messages inside one Response envelope to keep
 the local test double aligned with Twilio's response shape.
+It also verifies that throwing success and error callbacks are each invoked once,
+so private-message cannot emit a second completion for one request.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm
@@ -121,6 +123,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Private `/message.js` assets must export a function that returns a non-empty
   string from a non-blank absolute file asset path before `private-message`
   adds it to TwiML.
+- `private-message` computes its result before completing, with one error and
+  one success callback site outside each other's exception boundary.
 - The local TwiML harness keeps all message elements inside one response
   envelope, including multi-message fixtures.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

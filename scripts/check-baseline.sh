@@ -15,6 +15,7 @@ PRIVATE_ASSET_FILE_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-private-asset-file
 TWIML_RESPONSE_ENVELOPE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-twiml-response-envelope.md"
 DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety.md"
 DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
+SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-completion.md"
 
 require_file() {
   path=$1
@@ -55,6 +56,7 @@ for path in \
 done
 
 require_file "docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
+require_file "docs/plans/2026-06-12-private-message-single-completion.md"
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
@@ -157,6 +159,33 @@ fi
 
 if ! grep -Fq "Private message asset /message.js is not available." "$ROOT_DIR/functions/private-message.js"; then
   printf '%s\n' "private-message must report a missing private asset through callback(error)." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "callback(error);" "$ROOT_DIR/functions/private-message.js")" -ne 1 ] || \
+   [ "$(grep -Fc "callback(null, twiml);" "$ROOT_DIR/functions/private-message.js")" -ne 1 ]; then
+  printf '%s\n' "private-message must keep one error and one success completion site." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "throw new Error('Private message asset /message.js" "$ROOT_DIR/functions/private-message.js")" -ne 3 ]; then
+  printf '%s\n' "private-message validation failures must flow through the single error completion site." >&2
+  exit 1
+fi
+
+catch_line=$(grep -Fn "  } catch (error) {" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+error_callback_line=$(grep -Fn "    callback(error);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+success_callback_line=$(grep -Fn "  callback(null, twiml);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+
+if [ "$catch_line" -ge "$error_callback_line" ] || [ "$error_callback_line" -ge "$success_callback_line" ]; then
+  printf '%s\n' "private-message success completion must remain outside the error catch boundary." >&2
+  exit 1
+fi
+
+if ! grep -Fq "function invokeWithThrowingCallback" "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq "throwingSuccessCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq "throwingErrorCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must prove throwing success and error callbacks complete exactly once." >&2
   exit 1
 fi
 
@@ -412,6 +441,11 @@ if ! readme_has "multiple local TwiML messages inside one Response envelope"; th
   exit 1
 fi
 
+if ! readme_has "throwing success and error callbacks are each invoked once"; then
+  printf '%s\n' "README must document private-message single-completion coverage." >&2
+  exit 1
+fi
+
 if ! grep -Fq "workflow_dispatch" "$README"; then
   printf '%s\n' "README must document manual deployment workflow behavior." >&2
   exit 1
@@ -525,6 +559,12 @@ fi
 
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-private-asset-message-text-guard.md"; then
   printf '%s\n' "Private asset message text guard plan must record make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$SINGLE_COMPLETION_PLAN" || \
+   ! grep -Fq "make check" "$SINGLE_COMPLETION_PLAN"; then
+  printf '%s\n' "Private message single-completion plan must record completed status and make check verification." >&2
   exit 1
 fi
 
