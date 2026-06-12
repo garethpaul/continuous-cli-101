@@ -2,10 +2,15 @@
 
 ## 2026-06-12
 
+- Documented GitHub CodeQL default setup for Actions and Twilio JavaScript and
+  rejected a conflicting advanced workflow without broadening deployment secrets.
 - Refactored `private-message` validation to flow through one error completion
   site and moved successful completion outside the catchable computation block.
 - Added regression coverage proving throwing success and error callbacks are
   each invoked exactly once.
+- Covered non-throwing error callbacks so a missing return cannot fall through
+  into a second success completion.
+- Required one canonical Twilio workflow and rejected additional workflow files.
 
 ## 2026-06-10
 
