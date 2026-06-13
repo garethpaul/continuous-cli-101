@@ -2,7 +2,7 @@
 title: Twilio Duplicate Callback Detection
 type: test
 date: 2026-06-13
-status: planned
+status: completed
 ---
 
 # Twilio Duplicate Callback Detection
@@ -82,6 +82,23 @@ harness itself does not enforce the contract for every function.
   immediate/deferred fixtures, late-callback guard removal, and incomplete plan
   status; each mutation must fail.
 - Do not run or claim credentialed Twilio deployment validation.
+
+## Verification Results
+
+- Node 22.22.2 `node scripts/test-functions.js`, `npm test`, `npm run verify`,
+  `make check`, and the absolute-path `make check` wrapper from `/tmp` passed.
+- Lockfile-pinned ESLint 10.4.1 passed with zero warnings, and `npm audit`
+  reported zero known vulnerabilities.
+- Shell and Node syntax checks, whitespace validation, lockfile stability, and
+  explicit secret/artifact scans passed.
+- Eight isolated hostile mutations covering callback counting, deadline timer
+  cleanup, the observation window, duplicate-error text, both duplicate
+  fixtures, the late-callback guard, and completed-plan status were rejected.
+- The default shell runtime is Node 20.19.5, so dependencies were installed
+  from the unchanged lockfile and authoritative gates were rerun with the
+  installed Node 22.22.2 runtime required by `package.json`.
+- Credentialed Twilio deployment was intentionally not executed; functions,
+  dependencies, lockfile, and deployment workflows are unchanged.
 
 ## Prioritized Follow-Ups
 
