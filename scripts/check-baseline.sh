@@ -20,6 +20,7 @@ DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-g
 SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-completion.md"
 CODEQL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-codeql-baseline.md"
 CALLBACK_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
+ESLINT_UPGRADE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -65,6 +66,7 @@ require_file "docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 require_file "docs/plans/2026-06-12-private-message-single-completion.md"
 require_file "docs/plans/2026-06-12-codeql-baseline.md"
 require_file "docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
+require_file "docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
@@ -86,8 +88,28 @@ if ! grep -Fq '"twilio-run": "5.0.1"' "$PACKAGE_LOCK"; then
   exit 1
 fi
 
-if ! grep -Fq '"eslint": "10.4.1"' "$PACKAGE_JSON"; then
-  printf '%s\n' "package.json must keep the ESLint 10.4.1 lint baseline." >&2
+if ! grep -Fq '"eslint": "10.5.0"' "$PACKAGE_JSON"; then
+  printf '%s\n' "package.json must keep the ESLint 10.5.0 lint baseline." >&2
+  exit 1
+fi
+
+if ! node -e '
+  const fs = require("node:fs");
+  const lock = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  const rootVersion = lock.packages?.[""]?.devDependencies?.eslint;
+  const eslintPackage = lock.packages?.["node_modules/eslint"];
+  const legacyPackage = lock.dependencies?.eslint;
+  const expected = {
+    version: "10.5.0",
+    resolved: "https://registry.npmjs.org/eslint/-/eslint-10.5.0.tgz",
+    integrity: "sha512-1y+7C+vi12bUK1IpZeaV3gsH9fHLBmPvYmPx42pvT/E9yG0IC8g3PUZZgp0+JLJl7ZDK0flc2gc+Aw9dpCvIsQ==",
+  };
+  if (rootVersion !== expected.version) process.exit(1);
+  for (const entry of [eslintPackage, legacyPackage]) {
+    if (!entry || Object.keys(expected).some((key) => entry[key] !== expected[key])) process.exit(1);
+  }
+' "$PACKAGE_LOCK"; then
+  printf '%s\n' "package-lock.json must pin the verified ESLint 10.5.0 artifact." >&2
   exit 1
 fi
 
@@ -110,6 +132,35 @@ if ! grep -Fq '"audit": "npm audit --audit-level=moderate"' "$PACKAGE_JSON"; the
   printf '%s\n' "package.json must expose the moderate-severity audit script." >&2
   exit 1
 fi
+
+if ! grep -Fq 'ESLint `10.5.0` under Node 22' "$README" ||
+   ! grep -Fq 'docs/plans/2026-06-13-eslint-10-5-upgrade.md' "$README"; then
+  printf '%s\n' "README must document the verified ESLint 10.5.0 maintenance baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'ESLint 10.4.1 to 10.5.0' "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "CHANGES.md must record the ESLint 10.5.0 upgrade." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Keep the ESLint release exact, current, and verified' "$ROOT_DIR/VISION.md"; then
+  printf '%s\n' "VISION.md must preserve the exact ESLint maintenance priority." >&2
+  exit 1
+fi
+
+for plan_contract in \
+  'status: completed' \
+  '## Status: Completed' \
+  '## Work Completed' \
+  '## Verification Completed' \
+  'Node `22.22.2` `npm ci --ignore-scripts`' \
+  '`npm outdated --json` returned `{}`'; do
+  if ! grep -Fq "$plan_contract" "$ESLINT_UPGRADE_PLAN"; then
+    printf '%s\n' "ESLint upgrade plan must keep completed evidence: $plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "npm run audit" "$README"; then
   printf '%s\n' "README must document the moderate-severity audit gate." >&2
@@ -560,7 +611,7 @@ fi
 
 for package_contract in \
   '"@eslint/js": "10.0.1"' \
-  '"eslint": "10.4.1"' \
+  '"eslint": "10.5.0"' \
   '"twilio-run": "5.0.1"' \
   '"audit": "npm audit --audit-level=moderate"'; do
   if ! grep -Fq "$package_contract" "$ROOT_DIR/package.json"; then
