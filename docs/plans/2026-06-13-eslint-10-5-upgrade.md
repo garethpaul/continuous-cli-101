@@ -1,13 +1,13 @@
 ---
 title: ESLint 10.5 Upgrade
 type: maintenance
-status: planned
+status: completed
 date: 2026-06-13
 ---
 
 # ESLint 10.5 Upgrade
 
-## Status: Planned
+## Status: Completed
 
 ## Problem Frame
 
@@ -89,3 +89,26 @@ the Twilio deployment architecture.
    process globals.
 2. Add explicit workshop documentation for authentication-protected Twilio
    Functions without broadening public example behavior.
+
+## Work Completed
+
+- Pinned the direct ESLint development dependency and both npm lockfile package
+  records to `10.5.0` and its verified registry artifact integrity.
+- Preserved the existing Node `^22.13.0` runtime, ESLint flat configuration,
+  zero-warning policy, npm scripts, Twilio function behavior, and deployment
+  workflow.
+- Added source contracts for the exact manifest version, lockfile version,
+  resolved package URL, integrity, maintenance documentation, and this plan's
+  completed evidence.
+
+## Verification Completed
+
+- Node `22.22.2` `npm ci --ignore-scripts` installed 493 packages and reported
+  zero vulnerabilities.
+- `npm run lint`, `npm test`, `npm run check`, `npm run verify`, and `make check`
+  passed.
+- The absolute-path Make wrapper passed when invoked from `/tmp`.
+- `npm audit --json` reported zero vulnerabilities at every severity.
+- `npm outdated --json` returned `{}`.
+- `node --check scripts/test-functions.js`, `sh -n scripts/check-baseline.sh`,
+  and `git diff --check` passed.

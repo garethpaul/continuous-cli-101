@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Upgraded the package-lock-pinned lint toolchain from ESLint 10.4.1 to 10.5.0
+  under the existing Node 22 runtime and zero-warning policy.
 - Made the shared Twilio harness reject synchronous and near-immediate duplicate
   callbacks instead of silently accepting the first completion.
 - Separated the missing-callback deadline from a bounded duplicate-observation

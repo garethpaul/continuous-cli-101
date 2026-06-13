@@ -73,8 +73,9 @@ npm run audit
 npm run verify
 ```
 
-`npm run lint` runs ESLint against the checked-in JavaScript assets,
-functions, and test scripts with zero warnings allowed.
+`npm run lint` runs package-lock-pinned ESLint `10.5.0` under Node 22 against
+the checked-in JavaScript assets, functions, and test scripts with zero warnings
+allowed.
 
 The test harness stubs the Twilio Runtime and TwiML response classes, so it
 does not require Twilio credentials, network access, or a deployment. It covers
@@ -130,6 +131,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Maintenance Notes
 
+- Keep ESLint pinned to the verified `10.5.0` package artifact under Node 22;
+  see `docs/plans/2026-06-13-eslint-10-5-upgrade.md` for the completed upgrade
+  evidence.
 - Manual Twilio deployment should continue to call the package-lock-pinned
   `npm run deploy` script from the workflow.
 - Private `/message.js` assets must export a function that returns a non-empty

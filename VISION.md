@@ -36,6 +36,8 @@ Priority:
 - Keep credentialed deployment restricted to the default branch ref
 - Keep workflow actions commit-pinned and repository access read-only
 - Keep CodeQL default-setup coverage for Actions and Twilio JavaScript
+- Keep the ESLint release exact, current, and verified under the supported Node
+  runtime
 - Keep lint, test, and audit gates useful in normal CI paths
 
 Next priorities:
