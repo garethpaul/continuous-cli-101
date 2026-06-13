@@ -25,6 +25,7 @@ Priority:
 - Keep private asset module loading constrained to file paths
 - Keep private asset message output validated before TwiML rendering
 - Keep each Twilio Function invocation limited to one completion callback
+- Make local verification reject immediate duplicate completion callbacks
 - Keep local time-bounded Twilio callback verification fail-closed
 - Keep local TwiML harness output escaped like production XML
 - Keep local TwiML harness responses shaped like production XML envelopes

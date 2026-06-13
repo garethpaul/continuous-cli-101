@@ -3,6 +3,7 @@ const path = require("path");
 const {clearTimeout, setTimeout} = require("node:timers");
 
 const DEFAULT_CALLBACK_TIMEOUT_MS = 5000;
+const CALLBACK_OBSERVATION_MS = 10;
 
 function MessagingResponse() {
   this.messages = [];
@@ -37,6 +38,8 @@ function invoke(handler, options) {
     const previousRuntime = global.Runtime;
     const callbackTimeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0 ?
       options.timeoutMs : DEFAULT_CALLBACK_TIMEOUT_MS;
+    let callbackCount = 0;
+    let callbackObservationId;
     let settled = false;
     let timeoutId;
 
@@ -61,6 +64,7 @@ function invoke(handler, options) {
 
       settled = true;
       clearTimeout(timeoutId);
+      clearTimeout(callbackObservationId);
       restoreGlobals();
       operation();
     }
@@ -87,25 +91,40 @@ function invoke(handler, options) {
 
     try {
       handler(options.context || {}, options.event || {}, function callback(error, result) {
-        settle(function completeCallback() {
-          if (options.expectError) {
-            try {
-              assert(error instanceof Error);
-              assert.strictEqual(result, undefined);
-              resolve(error);
-            } catch (assertionError) {
-              reject(assertionError);
+        if (settled) {
+          return;
+        }
+
+        callbackCount += 1;
+        if (callbackCount > 1) {
+          settle(function rejectDuplicateCallback() {
+            reject(new Error("Twilio handler invoked its callback more than once."));
+          });
+          return;
+        }
+
+        clearTimeout(timeoutId);
+        callbackObservationId = setTimeout(function completeObservedCallback() {
+          settle(function completeCallback() {
+            if (options.expectError) {
+              try {
+                assert(error instanceof Error);
+                assert.strictEqual(result, undefined);
+                resolve(error);
+              } catch (assertionError) {
+                reject(assertionError);
+              }
+              return;
             }
-            return;
-          }
 
-          if (error) {
-            reject(error);
-            return;
-          }
+            if (error) {
+              reject(error);
+              return;
+            }
 
-          resolve(result);
-        });
+            resolve(result);
+          });
+        }, CALLBACK_OBSERVATION_MS);
       });
     } catch (error) {
       settle(function rejectSynchronousFailure() {
@@ -329,6 +348,61 @@ async function run() {
     missingCallbackError.message,
     "Twilio handler did not invoke its callback within 10ms."
   );
+
+  const shortDeadlineResult = await invoke(function callbackBeforeShortDeadline(
+    context,
+    event,
+    callback
+  ) {
+    callback(null, "on-time result");
+  }, {timeoutMs: 1});
+  assert.strictEqual(shortDeadlineResult, "on-time result");
+
+  const immediateDuplicateTwilioSentinel = {name: "immediate-duplicate-twilio"};
+  const immediateDuplicateRuntimeSentinel = {name: "immediate-duplicate-runtime"};
+  global.Twilio = immediateDuplicateTwilioSentinel;
+  global.Runtime = immediateDuplicateRuntimeSentinel;
+  let immediateDuplicateError;
+  try {
+    await invoke(function callbackTwiceImmediately(context, event, callback) {
+      callback(null, "first result");
+      callback(null, "second result");
+    });
+    assert.fail("A handler that calls back twice must fail the test harness.");
+  } catch (error) {
+    immediateDuplicateError = error;
+  }
+  assert.strictEqual(
+    immediateDuplicateError.message,
+    "Twilio handler invoked its callback more than once."
+  );
+  assert.strictEqual(global.Twilio, immediateDuplicateTwilioSentinel);
+  assert.strictEqual(global.Runtime, immediateDuplicateRuntimeSentinel);
+
+  const deferredDuplicateTwilioSentinel = {name: "deferred-duplicate-twilio"};
+  const deferredDuplicateRuntimeSentinel = {name: "deferred-duplicate-runtime"};
+  global.Twilio = deferredDuplicateTwilioSentinel;
+  global.Runtime = deferredDuplicateRuntimeSentinel;
+  let deferredDuplicateError;
+  try {
+    await invoke(function callbackTwiceAcrossTurns(context, event, callback) {
+      callback(null, "first result");
+      setTimeout(function invokeSecondCallback() {
+        callback(null, "second result");
+      }, 0);
+    });
+    assert.fail("A near-immediate second callback must fail the test harness.");
+  } catch (error) {
+    deferredDuplicateError = error;
+  }
+  assert.strictEqual(
+    deferredDuplicateError.message,
+    "Twilio handler invoked its callback more than once."
+  );
+  assert.strictEqual(global.Twilio, deferredDuplicateTwilioSentinel);
+  assert.strictEqual(global.Runtime, deferredDuplicateRuntimeSentinel);
+  delete global.Twilio;
+  delete global.Runtime;
 
   const synchronousTwilioSentinel = {name: "synchronous-twilio"};
   const synchronousRuntimeSentinel = {name: "synchronous-runtime"};

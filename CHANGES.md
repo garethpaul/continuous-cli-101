@@ -2,6 +2,11 @@
 
 ## 2026-06-13
 
+- Made the shared Twilio harness reject synchronous and near-immediate duplicate
+  callbacks instead of silently accepting the first completion.
+- Separated the missing-callback deadline from a bounded duplicate-observation
+  timer while preserving exactly-once global restoration and late-callback
+  isolation.
 - Prevented false-green missing-callback tests by adding a bounded completion
   deadline to every local Twilio handler invocation.
 - Added regression coverage for never-called, late, and synchronously failing

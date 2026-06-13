@@ -2,6 +2,8 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+CALLBACK_TEST="$ROOT_DIR/scripts/test-functions.js"
+DUPLICATE_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-duplicate-callback-detection.md"
 PACKAGE_JSON="$ROOT_DIR/package.json"
 PACKAGE_LOCK="$ROOT_DIR/package-lock.json"
 WORKFLOW="$ROOT_DIR/.github/workflows/main.yml"
@@ -238,6 +240,33 @@ fi
 if ! grep -Fq "function invokeWithRecordingCallback" "$ROOT_DIR/scripts/test-functions.js" || \
    ! grep -Fq "recordingErrorCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must prove a non-throwing error callback completes exactly once." >&2
+  exit 1
+fi
+
+if [ ! -f "$DUPLICATE_CALLBACK_PLAN" ] || \
+   ! grep -Fq "const CALLBACK_OBSERVATION_MS = 10;" "$CALLBACK_TEST" || \
+   ! grep -Fq "let callbackCount = 0;" "$CALLBACK_TEST" || \
+   [ "$(grep -Fc "if (settled) {" "$CALLBACK_TEST")" -lt 2 ] || \
+   [ "$(grep -Fc "clearTimeout(timeoutId);" "$CALLBACK_TEST")" -lt 2 ] || \
+   ! grep -Fq "clearTimeout(callbackObservationId);" "$CALLBACK_TEST" || \
+   ! grep -Fq "if (callbackCount > 1)" "$CALLBACK_TEST" || \
+   ! grep -Fq "Twilio handler invoked its callback more than once." "$CALLBACK_TEST" || \
+   ! grep -Fq "function callbackTwiceImmediately" "$CALLBACK_TEST" || \
+   ! grep -Fq "function callbackTwiceAcrossTurns" "$CALLBACK_TEST" || \
+   ! grep -Fq "function callbackBeforeShortDeadline" "$CALLBACK_TEST" || \
+   ! grep -Fq "immediateDuplicateTwilioSentinel" "$CALLBACK_TEST" || \
+   ! grep -Fq "deferredDuplicateRuntimeSentinel" "$CALLBACK_TEST"; then
+  printf '%s\n' "Twilio harness must reject immediate duplicate callback completion." >&2
+  exit 1
+fi
+
+if ! grep -Fq "short bounded observation" "$ROOT_DIR/README.md" || \
+   ! grep -Fq "near-immediate duplicate" "$ROOT_DIR/CHANGES.md" || \
+   ! grep -Fq "reject immediate duplicate completion callbacks" "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq "R6. Tests, static contracts" "$DUPLICATE_CALLBACK_PLAN" || \
+   ! grep -Fq "status: completed" "$DUPLICATE_CALLBACK_PLAN" || \
+   ! grep -Fq "Eight isolated hostile mutations" "$DUPLICATE_CALLBACK_PLAN"; then
+  printf '%s\n' "Duplicate callback documentation and plan contracts must remain checked in." >&2
   exit 1
 fi
 
