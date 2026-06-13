@@ -90,6 +90,10 @@ the local test double aligned with Twilio's response shape.
 It verifies that non-throwing error callbacks complete once without falling
 through to the success callback. Throwing success and error callbacks also
 propagate their sentinel after one completion.
+Every harness invocation has a bounded callback deadline, so a function that
+never completes fails explicitly instead of allowing a false-green Node exit.
+Timeout and synchronous-failure paths restore the prior Twilio globals, and a
+late callback cannot settle or restore them again.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm
@@ -153,6 +157,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dependency, and manual deployment safety baseline.
 - See `docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md` for the
   default-branch deployment eligibility guard.
+- See `docs/plans/2026-06-13-twilio-callback-timeout-harness.md` for bounded
+  local callback completion verification.
 
 ## Contributing
 

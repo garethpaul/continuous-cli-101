@@ -1,5 +1,8 @@
 const assert = require("assert");
 const path = require("path");
+const {clearTimeout, setTimeout} = require("node:timers");
+
+const DEFAULT_CALLBACK_TIMEOUT_MS = 5000;
 
 function MessagingResponse() {
   this.messages = [];
@@ -32,6 +35,10 @@ function invoke(handler, options) {
   return new Promise(function(resolve, reject) {
     const previousTwilio = global.Twilio;
     const previousRuntime = global.Runtime;
+    const callbackTimeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0 ?
+      options.timeoutMs : DEFAULT_CALLBACK_TIMEOUT_MS;
+    let settled = false;
+    let timeoutId;
 
     function restoreGlobals() {
       if (previousTwilio === undefined) {
@@ -47,6 +54,17 @@ function invoke(handler, options) {
       }
     }
 
+    function settle(operation) {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeoutId);
+      restoreGlobals();
+      operation();
+    }
+
     global.Twilio = {
       twiml: {
         MessagingResponse: MessagingResponse
@@ -59,31 +77,40 @@ function invoke(handler, options) {
       }
     };
 
+    timeoutId = setTimeout(function handleCallbackTimeout() {
+      settle(function rejectCallbackTimeout() {
+        reject(new Error(
+          "Twilio handler did not invoke its callback within " + callbackTimeoutMs + "ms."
+        ));
+      });
+    }, callbackTimeoutMs);
+
     try {
       handler(options.context || {}, options.event || {}, function callback(error, result) {
-        restoreGlobals();
-
-        if (options.expectError) {
-          try {
-            assert(error instanceof Error);
-            assert.strictEqual(result, undefined);
-            resolve(error);
-          } catch (assertionError) {
-            reject(assertionError);
+        settle(function completeCallback() {
+          if (options.expectError) {
+            try {
+              assert(error instanceof Error);
+              assert.strictEqual(result, undefined);
+              resolve(error);
+            } catch (assertionError) {
+              reject(assertionError);
+            }
+            return;
           }
-          return;
-        }
 
-        if (error) {
-          reject(error);
-          return;
-        }
+          if (error) {
+            reject(error);
+            return;
+          }
 
-        resolve(result);
+          resolve(result);
+        });
       });
     } catch (error) {
-      restoreGlobals();
-      reject(error);
+      settle(function rejectSynchronousFailure() {
+        reject(error);
+      });
     }
   });
 }
@@ -290,6 +317,62 @@ async function run() {
     blankMessageError.message,
     "Private message asset /message.js must return a non-empty string."
   );
+
+  let missingCallbackError;
+  try {
+    await invoke(function neverCallsBack() {}, {timeoutMs: 10});
+    assert.fail("A handler that never calls back must fail the test harness.");
+  } catch (error) {
+    missingCallbackError = error;
+  }
+  assert.strictEqual(
+    missingCallbackError.message,
+    "Twilio handler did not invoke its callback within 10ms."
+  );
+
+  const synchronousTwilioSentinel = {name: "synchronous-twilio"};
+  const synchronousRuntimeSentinel = {name: "synchronous-runtime"};
+  global.Twilio = synchronousTwilioSentinel;
+  global.Runtime = synchronousRuntimeSentinel;
+  let synchronousHandlerError;
+  try {
+    await invoke(function throwSynchronously() {
+      throw new Error("Synchronous handler failure sentinel.");
+    });
+  } catch (error) {
+    synchronousHandlerError = error;
+  }
+  assert.strictEqual(synchronousHandlerError.message, "Synchronous handler failure sentinel.");
+  assert.strictEqual(global.Twilio, synchronousTwilioSentinel);
+  assert.strictEqual(global.Runtime, synchronousRuntimeSentinel);
+
+  const timeoutTwilioSentinel = {name: "timeout-twilio"};
+  const timeoutRuntimeSentinel = {name: "timeout-runtime"};
+  global.Twilio = timeoutTwilioSentinel;
+  global.Runtime = timeoutRuntimeSentinel;
+  let lateCallback;
+  try {
+    await invoke(function captureLateCallback(context, event, callback) {
+      lateCallback = callback;
+    }, {timeoutMs: 10});
+  } catch (error) {
+    assert.strictEqual(
+      error.message,
+      "Twilio handler did not invoke its callback within 10ms."
+    );
+  }
+  assert.strictEqual(global.Twilio, timeoutTwilioSentinel);
+  assert.strictEqual(global.Runtime, timeoutRuntimeSentinel);
+
+  const postTimeoutTwilioSentinel = {name: "post-timeout-twilio"};
+  const postTimeoutRuntimeSentinel = {name: "post-timeout-runtime"};
+  global.Twilio = postTimeoutTwilioSentinel;
+  global.Runtime = postTimeoutRuntimeSentinel;
+  lateCallback(null, "late result");
+  assert.strictEqual(global.Twilio, postTimeoutTwilioSentinel);
+  assert.strictEqual(global.Runtime, postTimeoutRuntimeSentinel);
+  delete global.Twilio;
+  delete global.Runtime;
 }
 
 run()

@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-13
+
+- Prevented false-green missing-callback tests by adding a bounded completion
+  deadline to every local Twilio handler invocation.
+- Added regression coverage for never-called, late, and synchronously failing
+  callback paths with exactly-once timer cleanup and global restoration.
+
 ## 2026-06-12
 
 - Documented GitHub CodeQL default setup for Actions and Twilio JavaScript and

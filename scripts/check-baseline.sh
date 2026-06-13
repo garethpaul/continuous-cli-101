@@ -17,6 +17,7 @@ DEPLOYMENT_SAFETY_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-deployment-safety
 DEPLOYMENT_REF_PLAN="$ROOT_DIR/docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-completion.md"
 CODEQL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-codeql-baseline.md"
+CALLBACK_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -61,6 +62,7 @@ done
 require_file "docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md"
 require_file "docs/plans/2026-06-12-private-message-single-completion.md"
 require_file "docs/plans/2026-06-12-codeql-baseline.md"
+require_file "docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
@@ -129,6 +131,40 @@ fi
 
 if ! grep -Fq "Twilio function tests passed." "$ROOT_DIR/scripts/test-functions.js"; then
   printf '%s\n' "Function tests must have a clear success marker." >&2
+  exit 1
+fi
+
+for timeout_contract in \
+  'const {clearTimeout, setTimeout} = require("node:timers");' \
+  'const DEFAULT_CALLBACK_TIMEOUT_MS = 5000;' \
+  'let settled = false;' \
+  'function settle(operation)' \
+  'if (settled)' \
+  'settled = true;' \
+  'clearTimeout(timeoutId);' \
+  'timeoutId = setTimeout(function handleCallbackTimeout()' \
+  'settle(function completeCallback()' \
+  'settle(function rejectSynchronousFailure()'; do
+  if ! grep -Fq "$timeout_contract" "$ROOT_DIR/scripts/test-functions.js"; then
+    printf '%s\n' "Function harness must keep callback timeout contract: $timeout_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc 'Twilio handler did not invoke its callback within ' "$ROOT_DIR/scripts/test-functions.js")" -ne 3 ] || \
+   ! grep -Fq 'function neverCallsBack() {}' "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq '{timeoutMs: 10}' "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq 'function captureLateCallback(context, event, callback)' "$ROOT_DIR/scripts/test-functions.js" || \
+   ! grep -Fq 'function throwSynchronously()' "$ROOT_DIR/scripts/test-functions.js"; then
+  printf '%s\n' "Function tests must execute missing, late, and synchronous callback completion boundaries." >&2
+  exit 1
+fi
+
+if ! grep -Fq "bounded callback deadline" "$README" || \
+   ! grep -Fq "time-bounded Twilio callback verification" "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq "false-green missing-callback tests" "$ROOT_DIR/CHANGES.md" || \
+   ! grep -Fq "R6. The repository contract must enforce" "$CALLBACK_TIMEOUT_PLAN"; then
+  printf '%s\n' "Callback timeout harness documentation and plan contracts must remain checked in." >&2
   exit 1
 fi
 
