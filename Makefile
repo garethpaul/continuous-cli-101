@@ -1,7 +1,7 @@
 .PHONY: audit build check lint test verify
 
 NPM ?= npm
-ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 lint:
 	$(NPM) --prefix $(ROOT) run lint

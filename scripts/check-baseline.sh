@@ -21,6 +21,7 @@ SINGLE_COMPLETION_PLAN="$ROOT_DIR/docs/plans/2026-06-12-private-message-single-c
 CODEQL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-codeql-baseline.md"
 CALLBACK_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 ESLINT_UPGRADE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-eslint-10-5-upgrade.md"
+MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -67,6 +68,23 @@ require_file "docs/plans/2026-06-12-private-message-single-completion.md"
 require_file "docs/plans/2026-06-12-codeql-baseline.md"
 require_file "docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 require_file "docs/plans/2026-06-13-eslint-10-5-upgrade.md"
+require_file "docs/plans/2026-06-14-make-root-override-protection.md"
+
+if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile verification must protect and use the root derived from the loaded Makefile." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "## Status: Completed" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq 'make ROOT=/tmp check' "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "four Make gates" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "external working directory" "$MAKE_ROOT_PROTECTION_PLAN" || \
+   ! grep -Fq "Four isolated hostile mutations were rejected" "$MAKE_ROOT_PROTECTION_PLAN"; then
+  printf '%s\n' "Make root protection plan must record completed hostile-override and external verification." >&2
+  exit 1
+fi
 
 if ! grep -Fxq "22" "$ROOT_DIR/.nvmrc"; then
   printf '%s\n' ".nvmrc must pin the supported Node 22 baseline for twilio-run 5.x." >&2
