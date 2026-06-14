@@ -1,13 +1,13 @@
 ---
 title: Make Root Override Protection
 type: reliability
-status: in_progress
+status: completed
 date: 2026-06-14
 ---
 
 # Make Root Override Protection
 
-## Status: In Progress
+## Status: Completed
 
 ## Problem Frame
 
@@ -32,4 +32,18 @@ gate outside the checkout.
 
 ## Verification
 
-Pending implementation and validation.
+- `sh -n scripts/check-baseline.sh` and `node --check
+  scripts/test-functions.js` passed.
+- All four Make gates passed through `make lint`, `make test`, `make build`,
+  and `make check`; the check gate retained the pinned moderate-severity npm
+  audit.
+- `npm run verify` passed with ESLint 10.5.0, all callback harness cases, source
+  contracts, and zero reported package vulnerabilities.
+- `make ROOT=/tmp check` passed and still used the repository package root.
+- The full gate passed from `/tmp` through the absolute Makefile path, covering
+  the external working directory.
+- Four isolated hostile mutations were rejected: overrideable root, missing
+  plan, reopened plan, and missing verification evidence.
+- `git diff --check`, intended-path review, artifact inspection, and the
+  changed-line secret scan passed.
+- No credentialed Twilio deployment was run.
