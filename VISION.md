@@ -28,6 +28,7 @@ Priority:
 - Make local verification reject immediate duplicate completion callbacks
 - Keep local time-bounded Twilio callback verification fail-closed
 - Keep concurrent local Twilio invocations isolated from process-global fixtures
+- Keep multipart dependencies on CRLF-safe releases
 - Keep local TwiML harness output escaped like production XML
 - Keep local TwiML harness responses shaped like production XML envelopes
 - Make Node and Twilio CLI expectations explicit

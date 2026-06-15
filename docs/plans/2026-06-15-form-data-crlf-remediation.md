@@ -1,6 +1,6 @@
 # Form Data CRLF Remediation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -56,3 +56,17 @@ vulnerable graph.
   mutations
 - exact-diff, direct-dependency/workflow-drift, generated-artifact,
   credential-pattern, conflict-marker, and whitespace audits
+
+## Verification: Completed
+
+- A clean lockfile-pinned install under Node 22.22.2 resolved `form-data`
+  2.5.6 and 4.0.6, and `npm run verify` passed lint, all function tests,
+  source contracts, and a zero moderate-or-higher dependency audit.
+- Repository and external-directory `make check` gates passed.
+- Six isolated hostile form-data mutations were rejected across the 2.x and
+  4.x versions, required lock nodes, maintained guidance, plan status, and
+  verification evidence.
+- Exact-diff, direct-dependency/workflow-drift, generated-artifact,
+  credential-pattern, conflict-marker, whitespace, and shell-syntax audits
+  passed.
+- No credentialed Twilio deployment was run.

@@ -23,6 +23,7 @@ CALLBACK_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-callback-timeout-h
 ESLINT_UPGRADE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 CONCURRENT_HARNESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
+FORM_DATA_PLAN="$ROOT_DIR/docs/plans/2026-06-15-form-data-crlf-remediation.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -71,6 +72,7 @@ require_file "docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 require_file "docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 require_file "docs/plans/2026-06-14-make-root-override-protection.md"
 require_file "docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
+require_file "docs/plans/2026-06-15-form-data-crlf-remediation.md"
 
 if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
    ! grep -Fq '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile"; then
@@ -130,6 +132,29 @@ if ! node -e '
   }
 ' "$PACKAGE_LOCK"; then
   printf '%s\n' "package-lock.json must pin the verified ESLint 10.5.0 artifact." >&2
+  exit 1
+fi
+
+if ! node -e '
+  const fs = require("node:fs");
+  const lock = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+  const expected = new Map([
+    ["node_modules/form-data", [2, 5, 6]],
+    ["node_modules/axios/node_modules/form-data", [4, 0, 6]],
+  ]);
+  function atLeast(version, minimum) {
+    const parts = version.split(".").map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN) || parts[0] !== minimum[0]) return false;
+    return parts.some((part, index) =>
+      part > minimum[index] && parts.slice(0, index).every((value, prior) => value === minimum[prior])
+    ) || parts.every((part, index) => part === minimum[index]);
+  }
+  for (const [path, minimum] of expected) {
+    const entry = lock.packages?.[path];
+    if (!entry || typeof entry.version !== "string" || !atLeast(entry.version, minimum)) process.exit(1);
+  }
+' "$PACKAGE_LOCK"; then
+  printf '%s\n' "package-lock.json must keep both form-data dependency lines on CRLF-safe releases." >&2
   exit 1
 fi
 
@@ -374,6 +399,23 @@ for concurrent_plan_contract in \
   "No credentialed Twilio deployment was run"; do
   if ! grep -Fq "$concurrent_plan_contract" "$CONCURRENT_HARNESS_PLAN"; then
     printf '%s\n' "Concurrent harness plan must record completed verification: $concurrent_plan_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Locked both transitive form-data lines on CRLF-safe releases" "$ROOT_DIR/CHANGES.md" || \
+   ! grep -Fq "Keep multipart dependencies on CRLF-safe releases" "$ROOT_DIR/VISION.md"; then
+  printf '%s\n' "form-data CRLF remediation guidance must remain checked in." >&2
+  exit 1
+fi
+
+for form_data_plan_contract in \
+  "Status: Completed" \
+  "npm run verify" \
+  "hostile form-data mutations were rejected" \
+  "No credentialed Twilio deployment was run"; do
+  if ! grep -Fq "$form_data_plan_contract" "$FORM_DATA_PLAN"; then
+    printf '%s\n' "form-data remediation plan must record completed verification: $form_data_plan_contract" >&2
     exit 1
   fi
 done

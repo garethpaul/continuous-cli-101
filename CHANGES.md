@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Locked both transitive form-data lines on CRLF-safe releases and added a
+  structural lockfile regression gate for GHSA-hmw2-7cc7-3qxx.
+
 ## 2026-06-13
 
 - Serialized concurrent Twilio harness invocations so each test owns its Runtime
