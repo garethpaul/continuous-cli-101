@@ -4,6 +4,7 @@ const {clearTimeout, setTimeout} = require("node:timers");
 
 const DEFAULT_CALLBACK_TIMEOUT_MS = 5000;
 const CALLBACK_OBSERVATION_MS = 10;
+let invocationTail = Promise.resolve();
 
 function MessagingResponse() {
   this.messages = [];
@@ -31,6 +32,18 @@ MessagingResponse.prototype.toString = function toString() {
 };
 
 function invoke(handler, options) {
+  const invocation = invocationTail.then(function beginIsolatedInvocation() {
+    return invokeIsolated(handler, options);
+  });
+
+  invocationTail = invocation.then(
+    function releaseInvocationQueue() {},
+    function releaseInvocationQueueAfterFailure() {}
+  );
+  return invocation;
+}
+
+function invokeIsolated(handler, options) {
   options = options || {};
 
   return new Promise(function(resolve, reject) {
@@ -419,6 +432,43 @@ async function run() {
   assert.strictEqual(synchronousHandlerError.message, "Synchronous handler failure sentinel.");
   assert.strictEqual(global.Twilio, synchronousTwilioSentinel);
   assert.strictEqual(global.Runtime, synchronousRuntimeSentinel);
+
+  const concurrentTwilioSentinel = {name: "concurrent-twilio"};
+  const concurrentRuntimeSentinel = {name: "concurrent-runtime"};
+  global.Twilio = concurrentTwilioSentinel;
+  global.Runtime = concurrentRuntimeSentinel;
+  const concurrentResults = await Promise.all([
+    invoke(function delayedRuntimeRead(context, event, callback) {
+      setTimeout(function readInvocationRuntime() {
+        callback(null, Runtime.getAssets().marker);
+      }, 20);
+    }, {assets: {marker: "first invocation"}}),
+    invoke(function immediateRuntimeRead(context, event, callback) {
+      callback(null, Runtime.getAssets().marker);
+    }, {assets: {marker: "second invocation"}, timeoutMs: 1})
+  ]);
+  assert.deepStrictEqual(concurrentResults, ["first invocation", "second invocation"]);
+  assert.strictEqual(global.Twilio, concurrentTwilioSentinel);
+  assert.strictEqual(global.Runtime, concurrentRuntimeSentinel);
+
+  const recoveryTwilioSentinel = {name: "recovery-twilio"};
+  const recoveryRuntimeSentinel = {name: "recovery-runtime"};
+  global.Twilio = recoveryTwilioSentinel;
+  global.Runtime = recoveryRuntimeSentinel;
+  const recoveryResults = await Promise.allSettled([
+    invoke(function rejectQueuedInvocation() {
+      throw new Error("Queued failure sentinel.");
+    }),
+    invoke(function runAfterQueuedFailure(context, event, callback) {
+      callback(null, Runtime.getAssets().marker);
+    }, {assets: {marker: "queue recovered"}})
+  ]);
+  assert.strictEqual(recoveryResults[0].status, "rejected");
+  assert.strictEqual(recoveryResults[0].reason.message, "Queued failure sentinel.");
+  assert.strictEqual(recoveryResults[1].status, "fulfilled");
+  assert.strictEqual(recoveryResults[1].value, "queue recovered");
+  assert.strictEqual(global.Twilio, recoveryTwilioSentinel);
+  assert.strictEqual(global.Runtime, recoveryRuntimeSentinel);
 
   const timeoutTwilioSentinel = {name: "timeout-twilio"};
   const timeoutRuntimeSentinel = {name: "timeout-runtime"};

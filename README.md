@@ -98,6 +98,7 @@ late callback cannot settle or restore them again.
 The harness also holds the first callback for a short bounded observation
 window and fails when a handler invokes a synchronous or near-immediate second
 callback instead of silently accepting duplicate completion.
+Concurrent harness invocations are serialized before installing process-global Twilio fixtures.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm

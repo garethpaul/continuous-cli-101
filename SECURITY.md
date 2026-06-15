@@ -43,6 +43,7 @@ For web services, APIs, sockets, or scraping workflows, prioritize reports invol
 ## Dependency and Supply Chain Security
 
 CodeQL default-setup results cover GitHub Actions and the Twilio JavaScript functions/assets.
+Concurrent local Twilio tests serialize ownership of process-global Runtime fixtures.
 Triage findings without weakening the exact manual deployment policy or
 exposing deployment secrets to verification jobs.
 

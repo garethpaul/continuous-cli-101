@@ -22,6 +22,7 @@ CODEQL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-codeql-baseline.md"
 CALLBACK_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 ESLINT_UPGRADE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
+CONCURRENT_HARNESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -69,6 +70,7 @@ require_file "docs/plans/2026-06-12-codeql-baseline.md"
 require_file "docs/plans/2026-06-13-twilio-callback-timeout-harness.md"
 require_file "docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 require_file "docs/plans/2026-06-14-make-root-override-protection.md"
+require_file "docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 
 if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
    ! grep -Fq '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile"; then
@@ -338,6 +340,43 @@ if ! grep -Fq "short bounded observation" "$ROOT_DIR/README.md" || \
   printf '%s\n' "Duplicate callback documentation and plan contracts must remain checked in." >&2
   exit 1
 fi
+
+for harness_queue_contract in \
+  "let invocationTail = Promise.resolve();" \
+  "function invokeIsolated(handler, options)" \
+  "invocationTail.then(function beginIsolatedInvocation()" \
+  "function releaseInvocationQueue() {}" \
+  "function releaseInvocationQueueAfterFailure() {}" \
+  "const concurrentResults = await Promise.all([" \
+  'assets: {marker: "first invocation"}' \
+  'assets: {marker: "second invocation"}' \
+  'timeoutMs: 1' \
+  "const recoveryResults = await Promise.allSettled([" \
+  '"queue recovered"'; do
+  if ! grep -Fq "$harness_queue_contract" "$CALLBACK_TEST"; then
+    printf '%s\n' "Concurrent Twilio harness isolation contract is missing: $harness_queue_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "Concurrent harness invocations are serialized before installing process-global Twilio fixtures." "$README" || \
+  ! grep -Fq "Keep concurrent local Twilio invocations isolated from process-global fixtures" "$ROOT_DIR/VISION.md" || \
+  ! grep -Fq "Concurrent local Twilio tests serialize ownership of process-global Runtime fixtures." "$ROOT_DIR/SECURITY.md" || \
+  ! grep -Fq "Serialized concurrent Twilio harness invocations" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Concurrent harness isolation guidance must remain checked in." >&2
+  exit 1
+fi
+
+for concurrent_plan_contract in \
+  "Status: Completed" \
+  "npm run verify" \
+  "hostile concurrency mutations were rejected" \
+  "No credentialed Twilio deployment was run"; do
+  if ! grep -Fq "$concurrent_plan_contract" "$CONCURRENT_HARNESS_PLAN"; then
+    printf '%s\n' "Concurrent harness plan must record completed verification: $concurrent_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "const path = require('path');" "$ROOT_DIR/functions/private-message.js"; then
   printf '%s\n' "private-message must use Node path helpers for asset path validation." >&2

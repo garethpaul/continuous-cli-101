@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Serialized concurrent Twilio harness invocations so each test owns its Runtime
+  fixtures and the queue recovers after rejected handlers.
 - Upgraded the package-lock-pinned lint toolchain from ESLint 10.4.1 to 10.5.0
   under the existing Node 22 runtime and zero-warning policy.
 - Made the shared Twilio harness reject synchronous and near-immediate duplicate

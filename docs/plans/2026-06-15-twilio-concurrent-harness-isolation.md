@@ -1,6 +1,6 @@
 # Twilio Concurrent Harness Isolation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -56,3 +56,17 @@ and can allow one invocation to execute with another invocation's fixtures.
   status, and verification-evidence mutations
 - exact-diff, dependency/workflow-drift, generated-artifact, credential-pattern,
   conflict-marker, and whitespace audits
+
+## Verification: Completed
+
+- Node 22.22.2 syntax and focused function tests passed, including overlapping
+  distinct Runtime fixtures and queue recovery after a rejected predecessor.
+- The lockfile-pinned `npm run verify` passed with ESLint 10.5.0, function
+  tests, source contracts, and zero moderate-or-higher vulnerabilities.
+- Repository, hostile-root, and external-directory Make gates passed.
+- Focused hostile concurrency mutations were rejected across serialization,
+  rejection recovery, fixture separation, guidance, plan status, and
+  verification evidence.
+- Exact-diff, dependency/workflow-drift, generated-artifact,
+  credential-pattern, conflict-marker, and whitespace audits passed.
+- No credentialed Twilio deployment was run.
