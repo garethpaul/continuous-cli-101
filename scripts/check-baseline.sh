@@ -675,13 +675,16 @@ done
 
 ALL_BRANCH_VERIFICATION_PLAN_FLAT=$(tr '\n' ' ' < "$ALL_BRANCH_VERIFICATION_PLAN" | tr -s '[:space:]' ' ')
 for all_branch_plan_contract in \
-  'status: implemented' \
+  'status: completed' \
   'Run the `verify` job for pushes to every branch' \
   'pull requests targeting any branch' \
   'Keep the deploy job restricted to manual dispatch with confirmation on `refs/heads/main`' \
   'Require exact-head push and pull-request hosted verification success' \
   'Seven isolated mutations were rejected' \
-  'hosted verification remain pending until the implementation commit is pushed'; do
+  'Exact implementation head `5f3975629c92b2c97d48471675cdd0723d068dcf`' \
+  '27680346579' \
+  '27680363420' \
+  'both protected `deploy` jobs skipped as designed'; do
   if ! printf '%s\n' "$ALL_BRANCH_VERIFICATION_PLAN_FLAT" | grep -Fq "$all_branch_plan_contract"; then
     printf '%s\n' "All-branch verification plan must preserve contract: $all_branch_plan_contract" >&2
     exit 1

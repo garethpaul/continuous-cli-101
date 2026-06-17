@@ -2,7 +2,7 @@
 title: Continuous CLI All-Branch Verification
 type: ci
 date: 2026-06-17
-status: implemented
+status: completed
 execution: code
 ---
 
@@ -82,8 +82,9 @@ manual and main-only.
   README scope, and plan status.
 - `package-lock.json` remained unchanged and no credentialed Twilio deployment
   command was run.
-- Exact-head push and pull-request hosted verification remain pending until the
-  implementation commit is pushed.
+- Exact implementation head `5f3975629c92b2c97d48471675cdd0723d068dcf`
+  passed the `verify` job on push run `27680346579` and pull-request run
+  `27680363420`; both protected `deploy` jobs skipped as designed.
 
 ## Risks
 
