@@ -24,6 +24,7 @@ ESLINT_UPGRADE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-protection.md"
 CONCURRENT_HARNESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 FORM_DATA_PLAN="$ROOT_DIR/docs/plans/2026-06-15-form-data-crlf-remediation.md"
+ALL_BRANCH_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -73,6 +74,7 @@ require_file "docs/plans/2026-06-13-eslint-10-5-upgrade.md"
 require_file "docs/plans/2026-06-14-make-root-override-protection.md"
 require_file "docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 require_file "docs/plans/2026-06-15-form-data-crlf-remediation.md"
+require_file "docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
 
 if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
    ! grep -Fq '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile"; then
@@ -556,14 +558,22 @@ if [ "$(grep -Fc "persist-credentials: false" "$WORKFLOW")" -ne 2 ]; then
   exit 1
 fi
 
+workflow_trigger_block=$(awk '
+  /^on:/ { capture = 1 }
+  capture && /^permissions:/ { exit }
+  capture { print }
+' "$WORKFLOW")
+if printf '%s\n' "$workflow_trigger_block" | grep -Eq '^[[:space:]]+branches(-ignore)?:'; then
+  printf '%s\n' "Push and pull-request verification must remain unfiltered across branches." >&2
+  exit 1
+fi
+
 cat > "$EXPECTED_WORKFLOW" <<'EOF'
 name: Twilio CI
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       confirm_deploy:
@@ -653,6 +663,30 @@ if ! cmp -s "$WORKFLOW" "$EXPECTED_WORKFLOW"; then
   printf '%s\n' "Twilio CI must match the approved verification and manual-deployment policy." >&2
   exit 1
 fi
+
+for all_branch_doc in "$ROOT_DIR/AGENTS.md" "$README" "$ROOT_DIR/SECURITY.md" \
+  "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! tr '\n' ' ' < "$all_branch_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fq 'verification for pushes and pull requests on every branch'; then
+    printf '%s\n' "$all_branch_doc must document all-branch verification." >&2
+    exit 1
+  fi
+done
+
+ALL_BRANCH_VERIFICATION_PLAN_FLAT=$(tr '\n' ' ' < "$ALL_BRANCH_VERIFICATION_PLAN" | tr -s '[:space:]' ' ')
+for all_branch_plan_contract in \
+  'status: implemented' \
+  'Run the `verify` job for pushes to every branch' \
+  'pull requests targeting any branch' \
+  'Keep the deploy job restricted to manual dispatch with confirmation on `refs/heads/main`' \
+  'Require exact-head push and pull-request hosted verification success' \
+  'Seven isolated mutations were rejected' \
+  'hosted verification remain pending until the implementation commit is pushed'; do
+  if ! printf '%s\n' "$ALL_BRANCH_VERIFICATION_PLAN_FLAT" | grep -Fq "$all_branch_plan_contract"; then
+    printf '%s\n' "All-branch verification plan must preserve contract: $all_branch_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "Status: Completed" "$DEPLOYMENT_SAFETY_PLAN" ||
   ! grep -Fq "npm run verify" "$DEPLOYMENT_SAFETY_PLAN"; then

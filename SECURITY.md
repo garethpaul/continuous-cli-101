@@ -46,6 +46,9 @@ CodeQL default-setup results cover GitHub Actions and the Twilio JavaScript func
 Concurrent local Twilio tests serialize ownership of process-global Runtime fixtures.
 Triage findings without weakening the exact manual deployment policy or
 exposing deployment secrets to verification jobs.
+GitHub Actions provides no-credential verification for pushes and pull requests on every branch;
+credentialed deployment remains manual, confirmed, environment-protected, and
+restricted to `refs/heads/main`.
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 

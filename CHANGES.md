@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-17
+
+- Restored no-credential verification for pushes and pull requests on every
+  branch while preserving confirmed, environment-protected deployment only
+  from `refs/heads/main`.
+
 ## 2026-06-15
 
 - Locked both transitive form-data lines on CRLF-safe releases and added a

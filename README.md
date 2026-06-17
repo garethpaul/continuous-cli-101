@@ -114,7 +114,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
   secrets or local environment variables only.
-- GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
+- GitHub Actions provides verification for pushes and pull requests on every branch. Twilio
   deployment is only available through a manual `workflow_dispatch` run that
   explicitly selects `confirm_deploy: true` and only deploys from refs/heads/main.
 - The manual deploy job uses the package-lock-pinned deploy script instead of

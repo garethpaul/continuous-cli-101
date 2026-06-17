@@ -4,8 +4,9 @@ This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
 
 Continuous CLI 101 is a Twilio Serverless and GitHub Actions training sample.
-It contains Twilio Functions, static assets, and a workflow that verifies
-pushes while reserving deployment for manual `workflow_dispatch` runs.
+It contains Twilio Functions, static assets, and a workflow that provides
+verification for pushes and pull requests on every branch while reserving deployment for manual
+`workflow_dispatch` runs from `refs/heads/main`.
 
 The repository is useful as a compact example of deploying Twilio serverless
 code through CI with secrets supplied by GitHub Actions.
