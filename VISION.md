@@ -4,8 +4,9 @@ This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
 
 Continuous CLI 101 is a Twilio Serverless and GitHub Actions training sample.
-It contains Twilio Functions, static assets, and a workflow that verifies
-pushes while reserving deployment for manual `workflow_dispatch` runs.
+It contains Twilio Functions, static assets, and a workflow that provides
+verification for pushes and pull requests on every branch while reserving deployment for manual
+`workflow_dispatch` runs from `refs/heads/main`.
 
 The repository is useful as a compact example of deploying Twilio serverless
 code through CI with secrets supplied by GitHub Actions.
@@ -25,6 +26,10 @@ Priority:
 - Keep private asset module loading constrained to file paths
 - Keep private asset message output validated before TwiML rendering
 - Keep each Twilio Function invocation limited to one completion callback
+- Make local verification reject immediate duplicate completion callbacks
+- Keep local time-bounded Twilio callback verification fail-closed
+- Keep concurrent local Twilio invocations isolated from process-global fixtures
+- Keep multipart dependencies on CRLF-safe releases
 - Keep local TwiML harness output escaped like production XML
 - Keep local TwiML harness responses shaped like production XML envelopes
 - Make Node and Twilio CLI expectations explicit
@@ -33,6 +38,9 @@ Priority:
   and serialized execution
 - Keep credentialed deployment restricted to the default branch ref
 - Keep workflow actions commit-pinned and repository access read-only
+- Keep CodeQL default-setup coverage for Actions and Twilio JavaScript
+- Keep the ESLint release exact, current, and verified under the supported Node
+  runtime
 - Keep lint, test, and audit gates useful in normal CI paths
 
 Next priorities:

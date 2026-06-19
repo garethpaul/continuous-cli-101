@@ -2,9 +2,7 @@ name: Twilio CI
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       confirm_deploy:

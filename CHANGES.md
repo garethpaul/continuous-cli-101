@@ -1,11 +1,51 @@
 # Changes
 
+## 2026-06-19
+
+- Made the Twilio harness observe returned Promise rejections so async handler
+  failures cannot hang until the callback deadline or escape after callback
+  completion as unhandled rejections.
+- Strengthened concurrent fixture coverage so removing invocation serialization
+  produces a real overlapping Runtime-state failure.
+
+## 2026-06-17
+
+- Restored no-credential verification for pushes and pull requests on every
+  branch while preserving confirmed, environment-protected deployment only
+  from `refs/heads/main`.
+
+## 2026-06-15
+
+- Locked both transitive form-data lines on CRLF-safe releases and added a
+  structural lockfile regression gate for GHSA-hmw2-7cc7-3qxx.
+
+## 2026-06-13
+
+- Serialized concurrent Twilio harness invocations so each test owns its Runtime
+  fixtures and the queue recovers after rejected handlers.
+- Upgraded the package-lock-pinned lint toolchain from ESLint 10.4.1 to 10.5.0
+  under the existing Node 22 runtime and zero-warning policy.
+- Made the shared Twilio harness reject synchronous and near-immediate duplicate
+  callbacks instead of silently accepting the first completion.
+- Separated the missing-callback deadline from a bounded duplicate-observation
+  timer while preserving exactly-once global restoration and late-callback
+  isolation.
+- Prevented false-green missing-callback tests by adding a bounded completion
+  deadline to every local Twilio handler invocation.
+- Added regression coverage for never-called, late, and synchronously failing
+  callback paths with exactly-once timer cleanup and global restoration.
+
 ## 2026-06-12
 
+- Documented GitHub CodeQL default setup for Actions and Twilio JavaScript and
+  rejected a conflicting advanced workflow without broadening deployment secrets.
 - Refactored `private-message` validation to flow through one error completion
   site and moved successful completion outside the catchable computation block.
 - Added regression coverage proving throwing success and error callbacks are
   each invoked exactly once.
+- Covered non-throwing error callbacks so a missing return cannot fall through
+  into a second success completion.
+- Required one canonical Twilio workflow and rejected additional workflow files.
 
 ## 2026-06-10
 

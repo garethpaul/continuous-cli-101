@@ -73,8 +73,13 @@ npm run audit
 npm run verify
 ```
 
-`npm run lint` runs ESLint against the checked-in JavaScript assets,
-functions, and test scripts with zero warnings allowed.
+The harness treats a returned Promise rejection as an immediate handler
+failure, including a rejection that races a callback, instead of waiting for
+the callback deadline or allowing an unhandled rejection.
+
+`npm run lint` runs package-lock-pinned ESLint `10.5.0` under Node 22 against
+the checked-in JavaScript assets, functions, and test scripts with zero warnings
+allowed.
 
 The test harness stubs the Twilio Runtime and TwiML response classes, so it
 does not require Twilio credentials, network access, or a deployment. It covers
@@ -87,12 +92,25 @@ The harness XML-escapes local TwiML message bodies so special characters are
 represented safely in the output.
 It renders multiple local TwiML messages inside one Response envelope to keep
 the local test double aligned with Twilio's response shape.
-It also verifies that throwing success and error callbacks are each invoked once,
-so private-message cannot emit a second completion for one request.
+It verifies that non-throwing error callbacks complete once without falling
+through to the success callback. Throwing success and error callbacks also
+propagate their sentinel after one completion.
+Every harness invocation has a bounded callback deadline, so a function that
+never completes fails explicitly instead of allowing a false-green Node exit.
+Timeout and synchronous-failure paths restore the prior Twilio globals, and a
+late callback cannot settle or restore them again.
+The harness also holds the first callback for a short bounded observation
+window and fails when a handler invokes a synchronous or near-immediate second
+callback instead of silently accepting duplicate completion.
+Concurrent harness invocations are serialized before installing process-global Twilio fixtures.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm
 audit gate in the same order used by CI.
+GitHub CodeQL default setup analyzes the GitHub Actions and
+JavaScript/TypeScript surfaces. It is intentionally not duplicated by an
+advanced workflow and does not broaden the manual Twilio deployment secret
+boundary.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -100,7 +118,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - Twilio account SIDs, API keys, and API secrets must live in GitHub Actions
   secrets or local environment variables only.
-- GitHub Actions runs `npm run verify` for pushes and pull requests. Twilio
+- GitHub Actions provides verification for pushes and pull requests on every branch. Twilio
   deployment is only available through a manual `workflow_dispatch` run that
   explicitly selects `confirm_deploy: true` and only deploys from refs/heads/main.
 - The manual deploy job uses the package-lock-pinned deploy script instead of
@@ -118,6 +136,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Maintenance Notes
 
+- Keep ESLint pinned to the verified `10.5.0` package artifact under Node 22;
+  see `docs/plans/2026-06-13-eslint-10-5-upgrade.md` for the completed upgrade
+  evidence.
 - Manual Twilio deployment should continue to call the package-lock-pinned
   `npm run deploy` script from the workflow.
 - Private `/message.js` assets must export a function that returns a non-empty
@@ -148,6 +169,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   dependency, and manual deployment safety baseline.
 - See `docs/plans/2026-06-10-twilio-main-branch-deploy-guard.md` for the
   default-branch deployment eligibility guard.
+- See `docs/plans/2026-06-13-twilio-callback-timeout-harness.md` for bounded
+  local callback completion verification.
 
 ## Contributing
 
