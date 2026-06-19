@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-19
+
+- Made the Twilio harness observe returned Promise rejections so async handler
+  failures cannot hang until the callback deadline or escape after callback
+  completion as unhandled rejections.
+- Strengthened concurrent fixture coverage so removing invocation serialization
+  produces a real overlapping Runtime-state failure.
+
 ## 2026-06-17
 
 - Restored no-credential verification for pushes and pull requests on every

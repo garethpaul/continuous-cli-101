@@ -103,7 +103,7 @@ function invokeIsolated(handler, options) {
     }, callbackTimeoutMs);
 
     try {
-      handler(options.context || {}, options.event || {}, function callback(error, result) {
+      const handlerResult = handler(options.context || {}, options.event || {}, function callback(error, result) {
         if (settled) {
           return;
         }
@@ -138,6 +138,11 @@ function invokeIsolated(handler, options) {
             resolve(result);
           });
         }, CALLBACK_OBSERVATION_MS);
+      });
+      Promise.resolve(handlerResult).catch(function rejectReturnedPromise(error) {
+        settle(function rejectAsyncFailure() {
+          reject(error);
+        });
       });
     } catch (error) {
       settle(function rejectSynchronousFailure() {
@@ -433,6 +438,35 @@ async function run() {
   assert.strictEqual(global.Twilio, synchronousTwilioSentinel);
   assert.strictEqual(global.Runtime, synchronousRuntimeSentinel);
 
+  const asyncFailureStartedAt = Date.now();
+  let asyncHandlerError;
+  try {
+    await invoke(async function rejectWithoutCallback() {
+      throw new Error("Async handler failure sentinel.");
+    }, {timeoutMs: 1000});
+  } catch (error) {
+    asyncHandlerError = error;
+  }
+  assert.strictEqual(asyncHandlerError.message, "Async handler failure sentinel.");
+  assert(
+    Date.now() - asyncFailureStartedAt < 500,
+    "Async handler rejection must not wait for the callback timeout."
+  );
+
+  let callbackThenRejectError;
+  try {
+    await invoke(function callbackThenReject(context, event, callback) {
+      callback(null, "premature success");
+      return Promise.reject(new Error("Post-callback rejection sentinel."));
+    });
+  } catch (error) {
+    callbackThenRejectError = error;
+  }
+  assert.strictEqual(
+    callbackThenRejectError.message,
+    "Post-callback rejection sentinel."
+  );
+
   const concurrentTwilioSentinel = {name: "concurrent-twilio"};
   const concurrentRuntimeSentinel = {name: "concurrent-runtime"};
   global.Twilio = concurrentTwilioSentinel;
@@ -448,6 +482,25 @@ async function run() {
     }, {assets: {marker: "second invocation"}, timeoutMs: 1})
   ]);
   assert.deepStrictEqual(concurrentResults, ["first invocation", "second invocation"]);
+  assert.strictEqual(global.Twilio, concurrentTwilioSentinel);
+  assert.strictEqual(global.Runtime, concurrentRuntimeSentinel);
+
+  const overlappingResults = await Promise.all([
+    invoke(function readFirstOverlappingRuntime(context, event, callback) {
+      setTimeout(function readInvocationRuntime() {
+        callback(null, Runtime.getAssets().marker);
+      }, 10);
+    }, {assets: {marker: "first overlapping invocation"}}),
+    invoke(function readSecondOverlappingRuntime(context, event, callback) {
+      setTimeout(function readInvocationRuntime() {
+        callback(null, Runtime.getAssets().marker);
+      }, 30);
+    }, {assets: {marker: "second overlapping invocation"}})
+  ]);
+  assert.deepStrictEqual(overlappingResults, [
+    "first overlapping invocation",
+    "second overlapping invocation"
+  ]);
   assert.strictEqual(global.Twilio, concurrentTwilioSentinel);
   assert.strictEqual(global.Runtime, concurrentRuntimeSentinel);
 

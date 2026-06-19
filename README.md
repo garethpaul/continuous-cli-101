@@ -73,6 +73,10 @@ npm run audit
 npm run verify
 ```
 
+The harness treats a returned Promise rejection as an immediate handler
+failure, including a rejection that races a callback, instead of waiting for
+the callback deadline or allowing an unhandled rejection.
+
 `npm run lint` runs package-lock-pinned ESLint `10.5.0` under Node 22 against
 the checked-in JavaScript assets, functions, and test scripts with zero warnings
 allowed.

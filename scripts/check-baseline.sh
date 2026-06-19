@@ -260,6 +260,19 @@ if [ "$(grep -Fc 'Twilio handler did not invoke its callback within ' "$ROOT_DIR
   exit 1
 fi
 
+for async_handler_contract in \
+  'const handlerResult = handler(' \
+  'Promise.resolve(handlerResult).catch(function rejectReturnedPromise(error)' \
+  'function rejectWithoutCallback()' \
+  'Async handler rejection must not wait for the callback timeout.' \
+  'function callbackThenReject(context, event, callback)' \
+  'Post-callback rejection sentinel.'; do
+  if ! grep -Fq "$async_handler_contract" "$CALLBACK_TEST"; then
+    printf '%s\n' "Function harness must preserve async handler failure contract: $async_handler_contract" >&2
+    exit 1
+  fi
+done
+
 if ! grep -Fq "bounded callback deadline" "$README" || \
    ! grep -Fq "time-bounded Twilio callback verification" "$ROOT_DIR/VISION.md" || \
    ! grep -Fq "false-green missing-callback tests" "$ROOT_DIR/CHANGES.md" || \
@@ -377,6 +390,10 @@ for harness_queue_contract in \
   "const concurrentResults = await Promise.all([" \
   'assets: {marker: "first invocation"}' \
   'assets: {marker: "second invocation"}' \
+  "readFirstOverlappingRuntime" \
+  "readSecondOverlappingRuntime" \
+  'assets: {marker: "first overlapping invocation"}' \
+  'assets: {marker: "second overlapping invocation"}' \
   'timeoutMs: 1' \
   "const recoveryResults = await Promise.allSettled([" \
   '"queue recovered"'; do
