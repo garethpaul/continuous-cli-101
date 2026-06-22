@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 CALLBACK_TEST="$ROOT_DIR/scripts/test-functions.js"
 DUPLICATE_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-13-twilio-duplicate-callback-detection.md"
 PACKAGE_JSON="$ROOT_DIR/package.json"
@@ -28,6 +28,40 @@ ALL_BRANCH_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-17-continuous-cli-all
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
+if ! git -C "$ROOT_DIR" rev-parse --verify 'HEAD^{tree}' >/dev/null 2>&1; then
+  printf '%s\n' "Baseline integrity requires the current HEAD tree and Git index." >&2
+  exit 1
+fi
+
+if ! git -C "$ROOT_DIR" diff --quiet --no-ext-diff HEAD -- \
+    Makefile \
+    scripts/check-baseline.sh \
+    scripts/check-descriptor-discovery-bundle.js \
+    scripts/check-descriptor-discovery-lint-contract.js \
+    scripts/check-descriptor-discovery-test-wiring.js \
+    scripts/copy-tracked-worktree.sh \
+    scripts/descriptor-discovery.js \
+    scripts/test-descriptor-discovery.js \
+    scripts/test-make-path-boundary.sh \
+    scripts/test-make-path-boundary-v3-red.sh \
+    scripts/test-make-path-boundary-v4.sh \
+    scripts/test-make-high-fd.sh \
+    scripts/test-make-descriptor-types.sh \
+    scripts/test-make-proc-simulation.sh \
+    scripts/test-make-lsof-output.sh \
+    scripts/test-make-proc-large-output.sh \
+    scripts/test-make-lsof-truncation.sh \
+    scripts/test-make-linux-authority-mutations.sh \
+    scripts/test-make-path-boundary-mutations.sh \
+    scripts/test-shallow-baseline.sh \
+    scripts/test-shallow-baseline-mutation.sh \
+    scripts/test-copy-tracked-worktree.sh \
+    scripts/test-copy-tar-portability.sh \
+    scripts/test-copy-tar-portability-mutation.sh; then
+  printf '%s\n' "Critical verifier files must match the current HEAD tree." >&2
+  exit 1
+fi
+
 require_file() {
   path=$1
   if [ ! -f "$ROOT_DIR/$path" ]; then
@@ -52,6 +86,29 @@ for path in \
   "functions/sms/reply.protected.js" \
   "scripts/fixtures/blank-message.js" \
   "scripts/fixtures/non-function-message.js" \
+  ".continuous-cli-root" \
+  "scripts/check-descriptor-discovery-bundle.js" \
+  "scripts/check-descriptor-discovery-lint-contract.js" \
+  "scripts/check-descriptor-discovery-test-wiring.js" \
+  "scripts/descriptor-discovery.js" \
+  "scripts/test-descriptor-discovery.js" \
+  "scripts/test-make-path-boundary.sh" \
+  "scripts/test-make-path-boundary-v3-red.sh" \
+  "scripts/test-make-path-boundary-v4.sh" \
+  "scripts/test-make-high-fd.sh" \
+  "scripts/test-make-descriptor-types.sh" \
+  "scripts/test-make-proc-simulation.sh" \
+  "scripts/test-make-lsof-output.sh" \
+  "scripts/test-make-proc-large-output.sh" \
+  "scripts/test-make-lsof-truncation.sh" \
+  "scripts/test-make-linux-authority-mutations.sh" \
+  "scripts/test-make-path-boundary-mutations.sh" \
+  "scripts/copy-tracked-worktree.sh" \
+  "scripts/test-shallow-baseline.sh" \
+  "scripts/test-shallow-baseline-mutation.sh" \
+  "scripts/test-copy-tracked-worktree.sh" \
+  "scripts/test-copy-tar-portability.sh" \
+  "scripts/test-copy-tar-portability-mutation.sh" \
   "scripts/test-functions.js" \
   "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
   "docs/plans/2026-06-08-eslint-quality-gate.md" \
@@ -76,9 +133,59 @@ require_file "docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 require_file "docs/plans/2026-06-15-form-data-crlf-remediation.md"
 require_file "docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
 
-if ! grep -Fq 'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
-   ! grep -Fq '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile"; then
-  printf '%s\n' "Makefile verification must protect and use the root derived from the loaded Makefile." >&2
+if ! grep -Fq 'CONTINUOUS_CLI_ROOT_ID :=' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'ifeq ($(MAKE_VERSION),3.81)' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'CONTINUOUS_CLI_DISCOVERY_MODULE :=' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq '$(CONTINUOUS_CLI_DISCOVERY_MODULE) auto $$$$' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'CONTINUOUS_CLI_LSOF_END :=' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'fs.constants.O_NONBLOCK' "$ROOT_DIR/scripts/descriptor-discovery.js" || \
+   ! grep -Fq 'fs.fstatSync(handle).isFile()' "$ROOT_DIR/scripts/descriptor-discovery.js" || \
+   ! grep -Fq 'const READ_LIMIT = 65536' "$ROOT_DIR/scripts/descriptor-discovery.js" || \
+   ! grep -Fq 'const FIELD_LIMIT = 65536' "$ROOT_DIR/scripts/descriptor-discovery.js" || \
+   ! grep -Fq "childProcess.spawn('lsof'" "$ROOT_DIR/scripts/descriptor-discovery.js" || \
+   ! grep -Fq '$(file >$(CONTINUOUS_CLI_PARSE_FILE),$(value MAKEFILE_LIST)$(CONTINUOUS_CLI_LIST_END))' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq '[ "$$count" -eq 1 ]' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'root_b64=$$(printf %s "$$PWD/." | base64' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'exec "$$NPM" --prefix "$$PWD"' "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile verification must use the exact parse-time identity channel and physical root." >&2
+  exit 1
+fi
+
+if grep -Fq 'export CONTINUOUS_CLI_PARSE_LIST' "$ROOT_DIR/Makefile" || \
+   grep -Fq 'CONTINUOUS_CLI_MAKEFILE_MARKER := continuous-cli-101' "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile identity must not export MAKEFILE_LIST or use a public marker scan." >&2
+  exit 1
+fi
+
+if ! grep -Fxq '8f5148870e1d4b44b928c54e3e730882' "$ROOT_DIR/.continuous-cli-root" || \
+   ! grep -Fq 'dollar-directory' "$ROOT_DIR/scripts/test-make-path-boundary-v4.sh" || \
+   ! grep -Fq 'dollar-makefile' "$ROOT_DIR/scripts/test-make-path-boundary-v4.sh" || \
+   ! grep -Fq 'multi-collision' "$ROOT_DIR/scripts/test-make-path-boundary-v4.sh" || \
+   ! grep -Fq 'include-collision' "$ROOT_DIR/scripts/test-make-path-boundary-v4.sh" || \
+   ! grep -Fq 'duplicate-identity' "$ROOT_DIR/scripts/test-make-path-boundary-v4.sh" || \
+   ! grep -Fq 'INHERITED_FD_COUNT' "$ROOT_DIR/scripts/test-make-high-fd.sh" || \
+   ! grep -Fq "descriptor_type == 'fifo'" "$ROOT_DIR/scripts/test-make-descriptor-types.sh" || \
+   ! grep -Fq 'DESCRIPTOR_GENERATOR' "$ROOT_DIR/scripts/test-make-proc-simulation.sh" || \
+   grep -Fq 'jot ' "$ROOT_DIR/scripts/test-make-proc-simulation.sh" || \
+   ! grep -Fq 'INHERITED_REGULAR_FD_COUNT' "$ROOT_DIR/scripts/test-make-lsof-output.sh" || \
+   ! grep -Fq 'INHERITED_REGULAR_FD_COUNT' "$ROOT_DIR/scripts/test-make-proc-large-output.sh" || \
+   ! grep -Fq 'test-descriptor-discovery.js' "$ROOT_DIR/scripts/test-make-lsof-truncation.sh" || \
+   ! grep -Fq "'truncated record'" "$ROOT_DIR/scripts/test-descriptor-discovery.js" || \
+   ! grep -Fq "'nonzero child'" "$ROOT_DIR/scripts/test-descriptor-discovery.js" || \
+   ! grep -Fq "'post-sentinel framing'" "$ROOT_DIR/scripts/test-descriptor-discovery.js" || \
+   ! grep -Fq 'generator-failure-suppressed' "$ROOT_DIR/scripts/test-make-linux-authority-mutations.sh" || \
+   ! grep -Fq 'direct-parser-framing-bypassed' "$ROOT_DIR/scripts/test-make-linux-authority-mutations.sh" || \
+   ! grep -Fq 'direct-helper-test-bypassed' "$ROOT_DIR/scripts/test-make-linux-authority-mutations.sh" || \
+   ! grep -Fq 'make-381-list-export' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh" || \
+   ! grep -Fq 'fixed-lsof-descriptor-range' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh" || \
+   ! grep -Fq 'fifo-socket-regular-filter-removed' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh" || \
+   ! grep -Fq 'lsof-output-truncated' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh" || \
+   ! grep -Fq 'git -C "$ROOT_DIR" ls-files -z' "$ROOT_DIR/scripts/copy-tracked-worktree.sh" || \
+   grep -Fq 'archive 1c82b9674e7bc39a6722e2617b90a3c55e0de026' "$ROOT_DIR/scripts/copy-tracked-worktree.sh" || \
+   ! grep -Fq 'single-commit fixture unexpectedly contains the original parent tree' "$ROOT_DIR/scripts/test-shallow-baseline.sh" || \
+   ! grep -Fq 'shallow-parent-tree-dependence' "$ROOT_DIR/scripts/test-shallow-baseline-mutation.sh" || \
+   ! grep -Fq 'public-marker-scan' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh"; then
+  printf '%s\n' "Makefile path tests must preserve exact package identity and blocker mutations." >&2
   exit 1
 fi
 
@@ -725,8 +832,8 @@ if ! grep -Fq "only deploys from refs/heads/main" "$README"; then
 fi
 
 if [ ! -f "$ROOT_DIR/Makefile" ] || \
-   ! grep -Fq 'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' "$ROOT_DIR/Makefile" || \
-   [ "$(grep -Fc '$(NPM) --prefix $(ROOT)' "$ROOT_DIR/Makefile")" -ne 4 ]; then
+   ! grep -Fq 'override CONTINUOUS_CLI_ROOT_CHANNEL :=' "$ROOT_DIR/Makefile" || \
+   [ "$(grep -Fc '$(call run_npm,' "$ROOT_DIR/Makefile")" -ne 4 ]; then
   printf '%s\n' "Makefile must root all npm verification targets at the repository." >&2
   exit 1
 fi
@@ -950,6 +1057,30 @@ if ! grep -Fq "Status: Completed" "$SINGLE_COMPLETION_PLAN" || \
    ! grep -Fq "make check" "$SINGLE_COMPLETION_PLAN"; then
   printf '%s\n' "Private message single-completion plan must record completed status and make check verification." >&2
   exit 1
+fi
+
+"$ROOT_DIR/scripts/test-make-path-boundary.sh"
+node "$ROOT_DIR/scripts/check-descriptor-discovery-bundle.js"
+node "$ROOT_DIR/scripts/check-descriptor-discovery-lint-contract.js"
+node "$ROOT_DIR/scripts/check-descriptor-discovery-test-wiring.js"
+node "$ROOT_DIR/scripts/test-descriptor-discovery.js"
+"$ROOT_DIR/scripts/test-make-path-boundary-v3-red.sh"
+"$ROOT_DIR/scripts/test-make-path-boundary-v4.sh"
+"$ROOT_DIR/scripts/test-make-high-fd.sh"
+"$ROOT_DIR/scripts/test-make-descriptor-types.sh"
+"$ROOT_DIR/scripts/test-make-proc-simulation.sh"
+"$ROOT_DIR/scripts/test-make-lsof-output.sh"
+"$ROOT_DIR/scripts/test-make-proc-large-output.sh"
+"$ROOT_DIR/scripts/test-make-lsof-truncation.sh"
+"$ROOT_DIR/scripts/test-make-linux-authority-mutations.sh"
+"$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh"
+
+if [ "${CONTINUOUS_CLI_SHALLOW_BASELINE_ACTIVE:-}" != 1 ]; then
+  "$ROOT_DIR/scripts/test-copy-tracked-worktree.sh"
+  "$ROOT_DIR/scripts/test-copy-tar-portability.sh"
+  "$ROOT_DIR/scripts/test-copy-tar-portability-mutation.sh"
+  "$ROOT_DIR/scripts/test-shallow-baseline.sh"
+  "$ROOT_DIR/scripts/test-shallow-baseline-mutation.sh"
 fi
 
 printf '%s\n' "continuous-cli-101 Twilio baseline checks passed."
