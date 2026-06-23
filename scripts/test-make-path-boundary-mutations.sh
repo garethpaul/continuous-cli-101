@@ -4,8 +4,25 @@ set -eu
 
 ROOT_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)
 TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/continuous-cli-v4-mutations.XXXXXX")
-MAKE_381=${MAKE_381:-/usr/bin/make}
-MAKE_441=${MAKE_441:-/opt/homebrew/bin/gmake}
+
+resolve_make() {
+  candidate=$1
+  resolved=$(command -v "$candidate" 2>/dev/null || true)
+  if [ -z "$resolved" ] || [ ! -x "$resolved" ]; then
+    printf 'configured Make executable is unavailable: %s\n' "$candidate" >&2
+    exit 1
+  fi
+  printf '%s\n' "$resolved"
+}
+
+DEFAULT_MAKE=$(resolve_make make)
+if command -v gmake >/dev/null 2>&1; then
+  DEFAULT_MODERN_MAKE=$(resolve_make gmake)
+else
+  DEFAULT_MODERN_MAKE=$DEFAULT_MAKE
+fi
+MAKE_381=$(resolve_make "${MAKE_381:-$DEFAULT_MAKE}")
+MAKE_441=$(resolve_make "${MAKE_441:-$DEFAULT_MODERN_MAKE}")
 
 cleanup() {
   rm -rf -- "$TEMP_DIR"
@@ -22,7 +39,6 @@ mutate() {
   second_search=${7-}
   second_replacement=${8-}
   destination="$TEMP_DIR/$name/Makefile"
-  module_destination="$TEMP_DIR/$name/descriptor-discovery.js"
   mkdir -p "$(dirname -- "$destination")"
   cp -- "$ROOT_DIR/.continuous-cli-root" "$(dirname -- "$destination")/.continuous-cli-root"
 
@@ -89,6 +105,7 @@ mutate_module() {
   second_search=${7-}
   second_replacement=${8-}
   destination="$TEMP_DIR/$name/Makefile"
+  module_destination="$TEMP_DIR/$name/descriptor-discovery.js"
   mkdir -p "$(dirname -- "$destination")"
   cp -- "$ROOT_DIR/.continuous-cli-root" "$(dirname -- "$destination")/.continuous-cli-root"
 
@@ -142,29 +159,46 @@ NODE
   printf 'Rejected hostile mutation: %s\n' "$name"
 }
 
-mutate \
-  make-381-list-export \
-  "$MAKE_381" \
-  scripts/test-make-path-boundary-v4.sh \
-  dollar-directory \
-  'ifeq ($(MAKE_VERSION),3.81)' \
-  'ifeq ($(MAKE_VERSION),never)'
+MAKE_381_VERSION=$("$MAKE_381" --version | sed -n '1p')
+if [ "$MAKE_381_VERSION" = 'GNU Make 3.81' ]; then
+  mutate \
+    make-381-list-export \
+    "$MAKE_381" \
+    scripts/test-make-path-boundary-v4.sh \
+    dollar-directory \
+    'ifeq ($(MAKE_VERSION),3.81)' \
+    'ifeq ($(MAKE_VERSION),never)'
 
-mutate_module \
-  lsof-escape-decoding-removed \
-  "$MAKE_381" \
-  scripts/test-make-path-boundary-v4.sh \
-  byte-matrix \
-  'const file = decodeLsofName(value.slice(1));' \
-  'const file = value.slice(1);'
+  mutate_module \
+    lsof-escape-decoding-removed \
+    "$MAKE_381" \
+    scripts/test-make-path-boundary-v4.sh \
+    byte-matrix \
+    'const file = decodeLsofName(value.slice(1));' \
+    'const file = value.slice(1);'
 
-mutate_module \
-  fixed-lsof-descriptor-range \
-  "$MAKE_381" \
-  scripts/test-make-high-fd.sh \
-  all \
-  "['-a', '-p', String(pid), '-Fftn0']" \
-  "['-a', '-p', String(pid), '-d', '3-64', '-Fftn0']"
+  mutate_module \
+    fixed-lsof-descriptor-range \
+    "$MAKE_381" \
+    scripts/test-make-high-fd.sh \
+    all \
+    "['-a', '-p', String(pid), '-Fftn0']" \
+    "['-a', '-p', String(pid), '-d', '3-64', '-Fftn0']"
+
+  mutate_module \
+    lsof-output-truncated \
+    "$MAKE_381" \
+    scripts/test-make-lsof-output.sh \
+    all \
+    'for await (const chunk of processHandle.stdout) parser.write(Buffer.from(chunk));' \
+    'let captured = 0; for await (const chunk of processHandle.stdout) { const buffer = Buffer.from(chunk); if (captured < 1048576) parser.write(buffer.subarray(0, 1048576 - captured)); captured += buffer.length; }'
+else
+  for mutation in make-381-list-export lsof-escape-decoding-removed \
+    fixed-lsof-descriptor-range lsof-output-truncated; do
+    printf 'Skipped %s: GNU Make 3.81 required, found %s.\n' \
+      "$mutation" "$MAKE_381_VERSION"
+  done
+fi
 
 mutate_module \
   fifo-socket-regular-filter-removed \
@@ -173,14 +207,6 @@ mutate_module \
   all \
   "value.startsWith('n') && numeric && type === 'REG'" \
   "value.startsWith('n') && numeric"
-
-mutate_module \
-  lsof-output-truncated \
-  "$MAKE_381" \
-  scripts/test-make-lsof-output.sh \
-  all \
-  'for await (const chunk of processHandle.stdout) parser.write(Buffer.from(chunk));' \
-  'let captured = 0; for await (const chunk of processHandle.stdout) { const buffer = Buffer.from(chunk); if (captured < 1048576) parser.write(buffer.subarray(0, 1048576 - captured)); captured += buffer.length; }'
 
 mutate \
   public-marker-scan \
