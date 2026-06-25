@@ -43,6 +43,7 @@ if ! git -C "$ROOT_DIR" diff --quiet --no-ext-diff HEAD -- \
     scripts/descriptor-discovery.js \
     scripts/test-descriptor-discovery.js \
     scripts/test-make-path-boundary.sh \
+    scripts/test-make-version-routing.sh \
     scripts/test-make-path-boundary-v3-red.sh \
     scripts/test-make-path-boundary-v4.sh \
     scripts/test-make-high-fd.sh \
@@ -93,6 +94,7 @@ for path in \
   "scripts/descriptor-discovery.js" \
   "scripts/test-descriptor-discovery.js" \
   "scripts/test-make-path-boundary.sh" \
+  "scripts/test-make-version-routing.sh" \
   "scripts/test-make-path-boundary-v3-red.sh" \
   "scripts/test-make-path-boundary-v4.sh" \
   "scripts/test-make-high-fd.sh" \
@@ -135,6 +137,10 @@ require_file "docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
 
 if ! grep -Fq 'CONTINUOUS_CLI_ROOT_ID :=' "$ROOT_DIR/Makefile" || \
    ! grep -Fq 'ifeq ($(MAKE_VERSION),3.81)' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'else ifeq ($(MAKE_VERSION),3.82)' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'CONTINUOUS_CLI_MAKEFILE_LIST = $(value MAKEFILE_LIST)' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'export CONTINUOUS_CLI_MAKEFILE_LIST' "$ROOT_DIR/Makefile" || \
+   ! grep -Fq 'discoverFromMakefileList' "$ROOT_DIR/scripts/descriptor-discovery.js" || \
    ! grep -Fq 'CONTINUOUS_CLI_DISCOVERY_MODULE :=' "$ROOT_DIR/Makefile" || \
    ! grep -Fq '$(CONTINUOUS_CLI_DISCOVERY_MODULE) auto $$$$' "$ROOT_DIR/Makefile" || \
    ! grep -Fq 'CONTINUOUS_CLI_LSOF_END :=' "$ROOT_DIR/Makefile" || \
@@ -1060,6 +1066,7 @@ if ! grep -Fq "Status: Completed" "$SINGLE_COMPLETION_PLAN" || \
 fi
 
 "$ROOT_DIR/scripts/test-make-path-boundary.sh"
+"$ROOT_DIR/scripts/test-make-version-routing.sh"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-bundle.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-lint-contract.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-test-wiring.js"

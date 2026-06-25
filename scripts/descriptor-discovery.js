@@ -56,6 +56,68 @@ function selectSingle(matches) {
   return [...matches][0];
 }
 
+function addIdentified(matches, candidate, identity) {
+  if (!identified(candidate, candidate, identity)) return;
+  const root = fs.realpathSync(path.dirname(candidate));
+  matches.add(path.join(root, path.basename(candidate)));
+}
+
+function collectFromMakefileList(list, identity, matches) {
+  if (Buffer.byteLength(list) > FIELD_LIMIT) throw new Error('Makefile list is too large');
+  const fields = list.split(' ');
+  if (fields.length > 256) throw new Error('Makefile list has too many entries');
+  for (let start = 0; start < fields.length; start += 1) {
+    let candidate = '';
+    for (let stop = start; stop < fields.length; stop += 1) {
+      candidate += `${stop === start ? '' : ' '}${fields[stop]}`;
+      addIdentified(matches, candidate, identity);
+    }
+  }
+}
+
+function makefileArguments(args) {
+  const candidates = [];
+  for (let index = 1; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === '-f' || argument === '--file' || argument === '--makefile') {
+      if (index + 1 < args.length) candidates.push(args[index += 1]);
+    } else if (argument.startsWith('-f') && argument.length > 2) {
+      candidates.push(argument.slice(2));
+    } else if (argument.startsWith('--file=') || argument.startsWith('--makefile=')) {
+      candidates.push(argument.slice(argument.indexOf('=') + 1));
+    }
+  }
+  return candidates;
+}
+
+function discoverFromMakeInputs(list, identity, args) {
+  const matches = new Set();
+  collectFromMakefileList(list, identity, matches);
+  for (const candidate of makefileArguments(args)) addIdentified(matches, candidate, identity);
+  return selectSingle(matches);
+}
+
+function discoverFromMakefileList(list, identity) {
+  return discoverFromMakeInputs(list, identity, []);
+}
+
+function ancestorMakeArguments(pid = process.ppid) {
+  for (let depth = 0; depth < 8 && Number.isInteger(pid) && pid > 1; depth += 1) {
+    try {
+      const command = fs.readFileSync(`/proc/${pid}/cmdline`);
+      if (command.length > FIELD_LIMIT) throw new Error('ancestor command line is too large');
+      const args = command.toString().split('\0').filter(Boolean);
+      if (makefileArguments(args).length > 0) return args;
+      const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+      const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+      pid = Number(fields[1]);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function discoverFromProc(procDir, identity) {
   const matches = new Set();
   for (const fd of fs.readdirSync(procDir)) {
@@ -180,7 +242,13 @@ async function runCli(args) {
   const pid = pidArgument === 'self' ? process.pid : Number(pidArgument);
   if (!Number.isInteger(pid) || !identityValue || !end) throw new Error('invalid discovery arguments');
   const identity = `CONTINUOUS_CLI_ROOT_ID := ${identityValue}`;
-  const file = await discover({ backend, pid, identity, end });
+  const file = backend === 'list'
+    ? discoverFromMakeInputs(
+      process.env.CONTINUOUS_CLI_MAKEFILE_LIST || '',
+      identity,
+      ancestorMakeArguments(),
+    )
+    : await discover({ backend, pid, identity, end });
   process.stdout.write(emit(file));
 }
 
@@ -188,6 +256,8 @@ module.exports = {
   createLsofParser,
   decodeLsofName,
   discover,
+  discoverFromMakeInputs,
+  discoverFromMakefileList,
   discoverFromLsofChunks,
   discoverFromLsofProcess,
   discoverFromLsofStream,

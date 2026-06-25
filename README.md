@@ -115,11 +115,15 @@ ceiling, classifies numeric descriptors, and reads only regular files through
 a nonblocking, 64 KiB identity probe. FIFOs, sockets, pipes, directories,
 devices, and deleted pathnames are never read for identity. macOS `lsof`
 records are parsed incrementally with bounded per-record memory; incomplete
-output, child failure, framing errors, or ambiguity fail closed. Newer Make
-passes its raw list through a private parse file and requires exactly one
-high-entropy root identity. Recipes receive only a base64 identity channel,
-revalidate the selected file and root, and fail closed on deletion or
-ambiguous identity collisions.
+output, child failure, framing errors, or ambiguity fail closed. GNU Make 3.82
+exports its completed `MAKEFILE_LIST` to the target recipe, where the same
+embedded helper evaluates every byte-preserving candidate and requires one
+identified Makefile. On Linux it also checks the invoking Make process's
+original `-f` arguments so dollar-containing paths remain byte-exact despite
+3.82's lossy list variable. GNU Make 4.x passes its raw list through a private
+parse file and enforces the same identity rule. Recipes receive only a base64
+identity channel, revalidate the selected file and root, and fail closed on
+deletion or ambiguous identity collisions.
 
 The discovery tests call the checked-in module directly with explicit proc and
 lsof inputs. They cover truncation, nonzero child status, record framing, and

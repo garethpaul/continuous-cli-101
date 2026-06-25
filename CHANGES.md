@@ -1,5 +1,16 @@
 # Changes
 
+## 2026-06-24
+
+- Routed GNU Make 3.82 through recipe-time `MAKEFILE_LIST` discovery instead
+  of expanding the GNU Make 4.0-only `file` function during parsing.
+- Preserved dollar-containing direct `-f` paths through bounded Linux ancestor
+  argument discovery when GNU Make 3.82's list variable loses those bytes.
+- Added a legacy-version routing regression and included it in baseline and
+  shallow-clone integrity verification.
+- Re-ran Codex review after the initial pull-request head; the review identified
+  the 3.82 compatibility regression before merge.
+
 ## 2026-06-19
 
 - Made the Twilio harness observe returned Promise rejections so async handler

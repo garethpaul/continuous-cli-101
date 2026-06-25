@@ -26,6 +26,31 @@ async function expectFailure(label, action) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'descriptor-discovery-test.'));
   try {
     const makefile = fakeRegularFile(tempDir);
+    const wrapper = path.join(tempDir, 'wrapper with spaces.mk');
+    fs.writeFileSync(wrapper, '# wrapper\n');
+    const trailer = path.join(tempDir, 'trailer.mk');
+    fs.writeFileSync(trailer, '# trailer\n');
+    assert.equal(
+      discovery.discoverFromMakefileList(`${wrapper} ${makefile} ${trailer}`, identity),
+      makefile,
+    );
+
+    const duplicate = fakeRegularFile(tempDir, 'duplicate Makefile');
+    assert.throws(
+      () => discovery.discoverFromMakefileList(`${makefile} ${duplicate}`, identity),
+      /exactly one Makefile/,
+    );
+    assert.throws(
+      () => discovery.discoverFromMakefileList(Array(257).fill('missing').join(' '), identity),
+      /too many entries/,
+    );
+
+    const dollarMakefile = fakeRegularFile(tempDir, 'Make$file');
+    assert.equal(
+      discovery.discoverFromMakeInputs('', identity, ['make', '-f', dollarMakefile]),
+      dollarMakefile,
+    );
+
     const valid = Buffer.from(`p1\0f9\0tREG\0n${makefile}\0${end}\0`);
     assert.equal(await discovery.discoverFromLsofChunks([valid], 0, { identity, end }), makefile);
 
