@@ -11,15 +11,7 @@ INHERITED_REGULAR_FD_COUNT=${INHERITED_REGULAR_FD_COUNT:-8192}
 CASE_TIMEOUT=${CASE_TIMEOUT:-45}
 PATH_BOUNDARY_TARGET=${PATH_BOUNDARY_TARGET:-all}
 TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/continuous-cli-lsof-output.XXXXXX")
-
-if command -v gtimeout >/dev/null 2>&1; then
-  TIMEOUT=$(command -v gtimeout)
-elif command -v timeout >/dev/null 2>&1; then
-  TIMEOUT=$(command -v timeout)
-else
-  printf '%s\n' 'lsof output tests require timeout or gtimeout' >&2
-  exit 69
-fi
+TIMEOUT="$ROOT_DIR/scripts/run-with-timeout.js"
 
 if [ -z "$IDENTITY_UNDER_TEST" ] && \
     [ -f "$(dirname -- "$MAKEFILE_UNDER_TEST")/.continuous-cli-root" ]; then
@@ -93,7 +85,7 @@ for target in $targets; do
   : >"$log"
   set +e
   EXPECTED_ROOT="$expected_root" MARKER_LOG="$log" \
-    "$TIMEOUT" "$CASE_TIMEOUT" python3 - \
+    node "$TIMEOUT" "$CASE_TIMEOUT" python3 - \
       "$MAKE_PATH" "$repository/Makefile" "$STUB_NPM" "$target" \
       "$fixture_root" <<'PY'
 import os

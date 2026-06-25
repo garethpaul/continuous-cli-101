@@ -12,15 +12,7 @@ PATH_BOUNDARY_TARGET=${PATH_BOUNDARY_TARGET:-all}
 INHERITED_FD_COUNT=${INHERITED_FD_COUNT:-4096}
 CASE_TIMEOUT=${CASE_TIMEOUT:-8}
 TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/continuous-cli-descriptor-types.XXXXXX")
-
-if command -v gtimeout >/dev/null 2>&1; then
-  TIMEOUT=$(command -v gtimeout)
-elif command -v timeout >/dev/null 2>&1; then
-  TIMEOUT=$(command -v timeout)
-else
-  printf '%s\n' 'descriptor tests require timeout or gtimeout' >&2
-  exit 69
-fi
+TIMEOUT="$ROOT_DIR/scripts/run-with-timeout.js"
 
 if [ -z "$IDENTITY_UNDER_TEST" ] && \
     [ -f "$(dirname -- "$MAKEFILE_UNDER_TEST")/.continuous-cli-root" ]; then
@@ -87,7 +79,7 @@ run_case() {
 
   set +e
   EXPECTED_ROOT="$expected_root" MARKER_LOG="$log" \
-    "$TIMEOUT" "$CASE_TIMEOUT" python3 - \
+    node "$TIMEOUT" "$CASE_TIMEOUT" python3 - \
       "$MAKE_PATH" "$repository/Makefile" "$STUB_NPM" "$target" \
       "$descriptor_type" "$fixture" "$INHERITED_FD_COUNT" <<'PY'
 import os

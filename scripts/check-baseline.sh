@@ -33,9 +33,13 @@ if ! git -C "$ROOT_DIR" rev-parse --verify 'HEAD^{tree}' >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! git -C "$ROOT_DIR" diff --quiet --no-ext-diff HEAD -- \
+if [ "${CONTINUOUS_CLI_SHALLOW_BASELINE_ACTIVE:-}" = 1 ] && \
+   ! git -C "$ROOT_DIR" diff --quiet --no-ext-diff HEAD -- \
     Makefile \
     scripts/check-baseline.sh \
+    scripts/run-with-timeout.js \
+    scripts/test-baseline-working-tree-contract.sh \
+    scripts/test-run-with-timeout.js \
     scripts/check-descriptor-discovery-bundle.js \
     scripts/check-descriptor-discovery-lint-contract.js \
     scripts/check-descriptor-discovery-test-wiring.js \
@@ -91,6 +95,8 @@ for path in \
   "scripts/check-descriptor-discovery-bundle.js" \
   "scripts/check-descriptor-discovery-lint-contract.js" \
   "scripts/check-descriptor-discovery-test-wiring.js" \
+  "scripts/run-with-timeout.js" \
+  "scripts/test-baseline-working-tree-contract.sh" \
   "scripts/descriptor-discovery.js" \
   "scripts/test-descriptor-discovery.js" \
   "scripts/test-make-path-boundary.sh" \
@@ -111,6 +117,7 @@ for path in \
   "scripts/test-copy-tracked-worktree.sh" \
   "scripts/test-copy-tar-portability.sh" \
   "scripts/test-copy-tar-portability-mutation.sh" \
+  "scripts/test-run-with-timeout.js" \
   "scripts/test-functions.js" \
   "docs/plans/2026-06-08-twilio-function-test-baseline.md" \
   "docs/plans/2026-06-08-eslint-quality-gate.md" \
@@ -1067,6 +1074,8 @@ fi
 
 "$ROOT_DIR/scripts/test-make-path-boundary.sh"
 "$ROOT_DIR/scripts/test-make-version-routing.sh"
+"$ROOT_DIR/scripts/test-baseline-working-tree-contract.sh"
+node "$ROOT_DIR/scripts/test-run-with-timeout.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-bundle.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-lint-contract.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-test-wiring.js"

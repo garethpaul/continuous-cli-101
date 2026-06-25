@@ -10,6 +10,10 @@
   shallow-clone integrity verification.
 - Passed the full hostile path matrix with GNU Make 3.82 and the complete Node
   22 `npm run verify` gate, including the zero-vulnerability audit.
+- Limited exact-HEAD verifier integrity enforcement to copied shallow
+  snapshots so staged pre-commit verifier changes can run the documented gate.
+- Replaced the descriptor stress tests' GNU `timeout` dependency with a
+  checked-in Node runner that works on stock macOS and Linux hosts.
 - Re-ran Codex review after the initial pull-request head; the review identified
   the 3.82 compatibility regression before merge.
 

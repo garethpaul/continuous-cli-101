@@ -129,8 +129,10 @@ The discovery tests call the checked-in module directly with explicit proc and
 lsof inputs. They cover truncation, nonzero child status, record framing, and
 real `auto` integration without pretending a newer Make release selects the
 3.81 descriptor branch. Descriptor generation uses Node instead of BSD-only
-`jot`, and setup failures cannot print a pass message. Production always uses
-the hardcoded `auto` backend; test-only environment variables cannot select it.
+`jot`, and bounded descriptor subprocesses use the checked-in Node timeout
+runner instead of requiring GNU coreutils on macOS. Setup failures cannot print
+a pass message. Production always uses the hardcoded `auto` backend; test-only
+environment variables cannot select it.
 
 The source-only baseline builds its path fixtures from files tracked in the
 current checkout. It does not require parent commits or historical trees, so
