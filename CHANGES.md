@@ -8,6 +8,8 @@
   argument discovery when GNU Make 3.82's list variable loses those bytes.
 - Added a legacy-version routing regression and included it in baseline and
   shallow-clone integrity verification.
+- Passed the full hostile path matrix with GNU Make 3.82 and the complete Node
+  22 `npm run verify` gate, including the zero-vulnerability audit.
 - Re-ran Codex review after the initial pull-request head; the review identified
   the 3.82 compatibility regression before merge.
 
