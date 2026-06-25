@@ -123,7 +123,8 @@ original `-f` arguments so dollar-containing paths remain byte-exact despite
 3.82's lossy list variable. GNU Make 4.x passes its raw list through a private
 parse file and enforces the same identity rule. Recipes receive only a base64
 identity channel, revalidate the selected file and root, and fail closed on
-deletion or ambiguous identity collisions.
+deletion or ambiguous identity collisions. Channel decoding uses Node rather
+than GNU-specific `base64` flags so the same recipes run on stock macOS.
 
 The discovery tests call the checked-in module directly with explicit proc and
 lsof inputs. They cover truncation, nonzero child status, record framing, and

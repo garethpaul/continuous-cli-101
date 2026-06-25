@@ -47,6 +47,7 @@ if [ "${CONTINUOUS_CLI_SHALLOW_BASELINE_ACTIVE:-}" = 1 ] && \
     scripts/descriptor-discovery.js \
     scripts/test-descriptor-discovery.js \
     scripts/test-make-path-boundary.sh \
+    scripts/test-make-base64-portability.sh \
     scripts/test-make-version-routing.sh \
     scripts/test-make-path-boundary-v3-red.sh \
     scripts/test-make-path-boundary-v4.sh \
@@ -100,6 +101,7 @@ for path in \
   "scripts/descriptor-discovery.js" \
   "scripts/test-descriptor-discovery.js" \
   "scripts/test-make-path-boundary.sh" \
+  "scripts/test-make-base64-portability.sh" \
   "scripts/test-make-version-routing.sh" \
   "scripts/test-make-path-boundary-v3-red.sh" \
   "scripts/test-make-path-boundary-v4.sh" \
@@ -1073,6 +1075,7 @@ if ! grep -Fq "Status: Completed" "$SINGLE_COMPLETION_PLAN" || \
 fi
 
 "$ROOT_DIR/scripts/test-make-path-boundary.sh"
+"$ROOT_DIR/scripts/test-make-base64-portability.sh"
 "$ROOT_DIR/scripts/test-make-version-routing.sh"
 "$ROOT_DIR/scripts/test-baseline-working-tree-contract.sh"
 node "$ROOT_DIR/scripts/test-run-with-timeout.js"

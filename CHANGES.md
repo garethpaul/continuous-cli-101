@@ -14,6 +14,8 @@
   snapshots so staged pre-commit verifier changes can run the documented gate.
 - Replaced the descriptor stress tests' GNU `timeout` dependency with a
   checked-in Node runner that works on stock macOS and Linux hosts.
+- Replaced GNU-only `base64 -d` channel decoding with Node decoding and added
+  a regression that rejects the GNU decode flag while exercising Make.
 - Re-ran Codex review after the initial pull-request head; the review identified
   the 3.82 compatibility regression before merge.
 

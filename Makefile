@@ -42,11 +42,11 @@ export NPM
 
 ifeq ($(CONTINUOUS_CLI_USE_LIST_DISCOVERY),1)
 define run_npm
-	@channel=$$($(continuous_cli_capture_make_382)); sh -eu -c 'channel=$$1; [ -n "$$channel" ]; root_b64=$${channel%%:*}; makefile_b64=$${channel#*:}; root=$$(printf %s "$$root_b64" | base64 -d); makefile=$$({ printf %s "$$makefile_b64" | base64 -d; printf .; }); makefile=$${makefile%.}; [ -f "$$makefile" ]; CDPATH= cd -P -- "$$root"; [ "$$(cat .continuous-cli-root)" = "$(CONTINUOUS_CLI_ROOT_ID)" ]; grep -Fqx "$(CONTINUOUS_CLI_MAKEFILE_IDENTITY)" <"$$makefile"; exec "$$NPM" --prefix "$$PWD" $(1)' sh "$$channel"
+	@channel=$$($(continuous_cli_capture_make_382)); sh -eu -c 'channel=$$1; [ -n "$$channel" ]; root_b64=$${channel%%:*}; makefile_b64=$${channel#*:}; root=$$(node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$root_b64"); makefile=$$({ node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$makefile_b64"; printf .; }); makefile=$${makefile%.}; [ -f "$$makefile" ]; CDPATH= cd -P -- "$$root"; [ "$$(cat .continuous-cli-root)" = "$(CONTINUOUS_CLI_ROOT_ID)" ]; grep -Fqx "$(CONTINUOUS_CLI_MAKEFILE_IDENTITY)" <"$$makefile"; exec "$$NPM" --prefix "$$PWD" $(1)' sh "$$channel"
 endef
 else
 define run_npm
-	@sh -eu -c 'channel=$$1; [ -n "$$channel" ]; root_b64=$${channel%%:*}; makefile_b64=$${channel#*:}; root=$$(printf %s "$$root_b64" | base64 -d); makefile=$$({ printf %s "$$makefile_b64" | base64 -d; printf .; }); makefile=$${makefile%.}; [ -f "$$makefile" ]; CDPATH= cd -P -- "$$root"; [ "$$(cat .continuous-cli-root)" = "$(CONTINUOUS_CLI_ROOT_ID)" ]; grep -Fqx "$(CONTINUOUS_CLI_MAKEFILE_IDENTITY)" <"$$makefile"; exec "$$NPM" --prefix "$$PWD" $(1)' sh "$(CONTINUOUS_CLI_ROOT_CHANNEL)"
+	@sh -eu -c 'channel=$$1; [ -n "$$channel" ]; root_b64=$${channel%%:*}; makefile_b64=$${channel#*:}; root=$$(node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$root_b64"); makefile=$$({ node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$makefile_b64"; printf .; }); makefile=$${makefile%.}; [ -f "$$makefile" ]; CDPATH= cd -P -- "$$root"; [ "$$(cat .continuous-cli-root)" = "$(CONTINUOUS_CLI_ROOT_ID)" ]; grep -Fqx "$(CONTINUOUS_CLI_MAKEFILE_IDENTITY)" <"$$makefile"; exec "$$NPM" --prefix "$$PWD" $(1)' sh "$(CONTINUOUS_CLI_ROOT_CHANNEL)"
 endef
 endif
 
