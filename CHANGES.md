@@ -1,5 +1,24 @@
 # Changes
 
+## 2026-06-24
+
+- Routed GNU Make 3.82 through recipe-time `MAKEFILE_LIST` discovery instead
+  of expanding the GNU Make 4.0-only `file` function during parsing.
+- Preserved dollar-containing direct `-f` paths through bounded Linux ancestor
+  argument discovery when GNU Make 3.82's list variable loses those bytes.
+- Added a legacy-version routing regression and included it in baseline and
+  shallow-clone integrity verification.
+- Passed the full hostile path matrix with GNU Make 3.82 and the complete Node
+  22 `npm run verify` gate, including the zero-vulnerability audit.
+- Limited exact-HEAD verifier integrity enforcement to copied shallow
+  snapshots so staged pre-commit verifier changes can run the documented gate.
+- Replaced the descriptor stress tests' GNU `timeout` dependency with a
+  checked-in Node runner that works on stock macOS and Linux hosts.
+- Replaced GNU-only `base64 -d` channel decoding with Node decoding and added
+  a regression that rejects the GNU decode flag while exercising Make.
+- Re-ran Codex review after the initial pull-request head; the review identified
+  the 3.82 compatibility regression before merge.
+
 ## 2026-06-19
 
 - Made the Twilio harness observe returned Promise rejections so async handler

@@ -105,6 +105,47 @@ callback instead of silently accepting duplicate completion.
 Concurrent harness invocations are serialized before installing process-global Twilio fixtures.
 
 `npm run check` runs `scripts/check-baseline.sh` for source-only guardrails.
+Those guardrails exercise every Make target across normal, whitespace,
+newline, dollar, metacharacter, leading-dash, symlink, recursive, multiple-`-f`,
+and included-wrapper paths. The Makefile establishes its root during parsing:
+GNU Make 3.81 runs the exact checked-in descriptor-discovery Node module from
+an integrity-checked embedded bundle with a hardcoded `auto` backend. The
+helper resolves the currently open identified Makefile without a descriptor
+ceiling, classifies numeric descriptors, and reads only regular files through
+a nonblocking, 64 KiB identity probe. FIFOs, sockets, pipes, directories,
+devices, and deleted pathnames are never read for identity. macOS `lsof`
+records are parsed incrementally with bounded per-record memory; incomplete
+output, child failure, framing errors, or ambiguity fail closed. GNU Make 3.82
+exports its completed `MAKEFILE_LIST` to the target recipe, where the same
+embedded helper evaluates every byte-preserving candidate and requires one
+identified Makefile. On Linux it also checks the invoking Make process's
+original `-f` arguments so dollar-containing paths remain byte-exact despite
+3.82's lossy list variable. GNU Make 4.x passes its raw list through a private
+parse file and enforces the same identity rule. Recipes receive only a base64
+identity channel, revalidate the selected file and root, and fail closed on
+deletion or ambiguous identity collisions. Channel decoding uses Node rather
+than GNU-specific `base64` flags so the same recipes run on stock macOS.
+
+The discovery tests call the checked-in module directly with explicit proc and
+lsof inputs. They cover truncation, nonzero child status, record framing, and
+real `auto` integration without pretending a newer Make release selects the
+3.81 descriptor branch. Descriptor generation uses Node instead of BSD-only
+`jot`, and bounded descriptor subprocesses use the checked-in Node timeout
+runner instead of requiring GNU coreutils on macOS. Setup failures cannot print
+a pass message. Production always uses the hardcoded `auto` backend; test-only
+environment variables cannot select it.
+
+The source-only baseline builds its path fixtures from files tracked in the
+current checkout. It does not require parent commits or historical trees, so
+the same integrity and tamper checks run in GitHub depth-1 pull-request
+checkouts. Its tracked-worktree copier changes into the source and destination
+directories before archiving or extracting, keeping GNU and BSD tar from
+interpreting backslashes, leading dashes, or newlines in those directory names.
+
+The `NPM` Make variable is one executable pathname. It may contain spaces or
+shell metacharacters, but it is not evaluated as a command fragment and cannot
+contain wrapper arguments; use an executable wrapper file when arguments are
+required.
 `npm run verify` runs lint, tests, source checks, and the moderate-severity npm
 audit gate in the same order used by CI.
 GitHub CodeQL default setup analyzes the GitHub Actions and
