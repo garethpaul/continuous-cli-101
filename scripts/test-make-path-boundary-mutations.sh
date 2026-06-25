@@ -237,8 +237,8 @@ mutate \
   "$MAKE_441" \
   scripts/test-make-path-boundary-v4.sh \
   byte-matrix \
-  'makefile=$$({ printf %s "$$makefile_b64" | base64 -d; printf .; }); makefile=$${makefile%.};' \
-  'makefile=$$(printf %s "$$makefile_b64" | base64 -d);'
+  'makefile=$$({ node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$makefile_b64"; printf .; }); makefile=$${makefile%.};' \
+  'makefile=$$(node -e "process.stdout.write(Buffer.from(process.argv[1],\"base64\"))" "$$makefile_b64");'
 
 mutate \
   physical-root-replaced-by-caller-cwd \
