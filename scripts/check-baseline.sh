@@ -25,6 +25,7 @@ MAKE_ROOT_PROTECTION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-make-root-override-pr
 CONCURRENT_HARNESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-twilio-concurrent-harness-isolation.md"
 FORM_DATA_PLAN="$ROOT_DIR/docs/plans/2026-06-15-form-data-crlf-remediation.md"
 ALL_BRANCH_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
+README_USAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-25-readme-local-deployment.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -86,6 +87,7 @@ for path in \
   "package-lock.json" \
   ".github/workflows/main.yml" \
   "CHANGES.md" \
+  "docs/plans/2026-06-25-readme-local-deployment.md" \
   "assets/message.private.js" \
   "functions/hello-world.js" \
   "functions/private-message.js" \
@@ -905,6 +907,31 @@ if ! readme_has "npm run verify"; then
   printf '%s\n' "README must document the verification command." >&2
   exit 1
 fi
+
+for readme_usage_contract in \
+  'Run the local Twilio Serverless development server' \
+  'http://localhost:3000' \
+  'GitHub **Actions** tab, choose **Twilio CI**, and select **Run workflow**' \
+  '`confirm_deploy` to `true`' \
+  '`twilio-development` environment' \
+  'only `refs/heads/main` is eligible' \
+  'Do not run `npm run deploy` against a real account'; do
+  if ! readme_has "$readme_usage_contract"; then
+    printf '%s\n' "README must keep local-run and deployment guidance: $readme_usage_contract" >&2
+    exit 1
+  fi
+done
+
+for readme_usage_plan_contract in \
+  'Status: Completed' \
+  'manual deployment instructions' \
+  'Seven isolated hostile mutations were rejected' \
+  'npm run verify'; do
+  if ! grep -Fq "$readme_usage_plan_contract" "$README_USAGE_PLAN"; then
+    printf '%s\n' "README usage plan must keep completion evidence: $readme_usage_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! readme_has "null Runtime asset map"; then
   printf '%s\n' "README must document the null Runtime asset-map test case." >&2

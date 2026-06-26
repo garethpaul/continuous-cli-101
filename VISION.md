@@ -45,7 +45,8 @@ Priority:
 
 Next priorities:
 
-- Add README setup, local run, and deployment instructions
+- Keep README setup, local run, and guarded manual deployment instructions
+  aligned with the checked-in workflow
 - Update Node runtime expectations and workflow actions deliberately
 - Add examples for protected functions and private assets
 

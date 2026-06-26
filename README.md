@@ -48,7 +48,16 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Running or Using the Project
 
-- Run `npm start` for the default development command.
+Run the local Twilio Serverless development server:
+
+```bash
+npm start
+```
+
+The package-lock-pinned `twilio-run` server exposes the sample at
+`http://localhost:3000`. Local function verification does not require Twilio
+credentials; account-backed behavior should use test credentials and must not
+print secrets.
 
 Detected npm scripts:
 
@@ -59,6 +68,23 @@ Detected npm scripts:
 - `npm run start` - `twilio-run`
 - `npm run test` - `node scripts/test-functions.js`
 - `npm run verify` - `npm run lint && npm test && npm run check && npm run audit`
+
+### Manual Deployment
+
+Deployment is intentionally unavailable on ordinary pushes and pull requests.
+From the repository's GitHub **Actions** tab, choose **Twilio CI**, and select
+**Run workflow** from the `main` branch. Set `confirm_deploy` to `true`.
+
+The deploy job runs only after verification, only `refs/heads/main` is eligible,
+and GitHub gates credentials through the protected `twilio-development`
+environment. Configure `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY`, and
+`TWILIO_API_SECRET` as environment secrets; never place them in workflow input,
+source, local logs, or the repository.
+
+Do not run `npm run deploy` against a real account unless you intentionally
+accept the same service name, `dev` environment, and `--force` behavior used by
+the reviewed workflow. Prefer the manual workflow so verification, branch,
+environment, and concurrency guards remain active.
 
 ## Testing and Verification
 
