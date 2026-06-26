@@ -1,5 +1,13 @@
 # Changes
 
+## 2026-06-25
+
+- Added concrete `npm start` local-server instructions and documented the
+  no-credential local verification boundary.
+- Added exact manual GitHub Actions deployment steps, required environment
+  secrets, main-branch eligibility, confirmation, environment protection, and
+  guidance against bypassing workflow safety with an ad hoc real-account deploy.
+
 ## 2026-06-24
 
 - Routed GNU Make 3.82 through recipe-time `MAKEFILE_LIST` discovery instead
