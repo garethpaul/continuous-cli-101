@@ -10,7 +10,21 @@ function MessagingResponse() {
   this.messages = [];
 }
 
+function requireValidXmlText(value) {
+  for (const character of String(value)) {
+    const codePoint = character.codePointAt(0);
+    const valid = codePoint === 0x9 || codePoint === 0xA || codePoint === 0xD ||
+      (codePoint >= 0x20 && codePoint <= 0xD7FF) ||
+      (codePoint >= 0xE000 && codePoint <= 0xFFFD) ||
+      (codePoint >= 0x10000 && codePoint <= 0x10FFFF);
+    if (!valid) {
+      throw new Error("TwiML message contains an invalid XML character.");
+    }
+  }
+}
+
 function escapeXml(value) {
+  requireValidXmlText(value);
   return String(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -353,6 +367,20 @@ async function run() {
   assert.strictEqual(
     blankMessageError.message,
     "Private message asset /message.js must return a non-empty string."
+  );
+
+  const invalidXmlMessagePath = path.join(__dirname, "fixtures/invalid-xml-message.js");
+  const invalidXmlMessageError = await invoke(privateMessage, {
+    assets: {
+      "/message.js": {
+        path: invalidXmlMessagePath
+      }
+    },
+    expectError: true
+  });
+  assert.strictEqual(
+    invalidXmlMessageError.message,
+    "TwiML message contains an invalid XML character."
   );
 
   let missingCallbackError;

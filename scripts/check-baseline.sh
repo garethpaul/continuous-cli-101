@@ -26,6 +26,7 @@ CONCURRENT_HARNESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-twilio-concurrent-harne
 FORM_DATA_PLAN="$ROOT_DIR/docs/plans/2026-06-15-form-data-crlf-remediation.md"
 ALL_BRANCH_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-17-continuous-cli-all-branch-verification.md"
 README_USAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-25-readme-local-deployment.md"
+PRIVATE_MESSAGE_SERIALIZATION_PLAN="$ROOT_DIR/docs/plans/2026-06-26-private-message-serialization.md"
 EXPECTED_WORKFLOW=$(mktemp "${TMPDIR:-/tmp}/continuous-cli-workflow.XXXXXX")
 trap 'rm -f "$EXPECTED_WORKFLOW"' EXIT HUP INT TERM
 
@@ -88,11 +89,13 @@ for path in \
   ".github/workflows/main.yml" \
   "CHANGES.md" \
   "docs/plans/2026-06-25-readme-local-deployment.md" \
+  "docs/plans/2026-06-26-private-message-serialization.md" \
   "assets/message.private.js" \
   "functions/hello-world.js" \
   "functions/private-message.js" \
   "functions/sms/reply.protected.js" \
   "scripts/fixtures/blank-message.js" \
+  "scripts/fixtures/invalid-xml-message.js" \
   "scripts/fixtures/non-function-message.js" \
   ".continuous-cli-root" \
   "scripts/check-descriptor-discovery-bundle.js" \
@@ -450,20 +453,62 @@ if [ "$(grep -Fc "throw new Error('Private message asset /message.js" "$ROOT_DIR
   exit 1
 fi
 
+if [ "$(grep -Fc "    twiml.message(message);" "$ROOT_DIR/functions/private-message.js")" -ne 1 ] || \
+   [ "$(grep -Fc "    twiml.toString();" "$ROOT_DIR/functions/private-message.js")" -ne 1 ]; then
+  printf '%s\n' "private-message must keep one message append and one serialization validation." >&2
+  exit 1
+fi
+
 catch_line=$(grep -Fn "  } catch (error) {" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
 error_callback_line=$(grep -Fn "    callback(error);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
 success_callback_line=$(grep -Fn "  callback(null, twiml);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+message_line=$(grep -Fn "    twiml.message(message);" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
+serialization_line=$(grep -Fn "    twiml.toString();" "$ROOT_DIR/functions/private-message.js" | cut -d: -f1)
 error_completion=$(awk '/^  } catch \(error\) \{$/,/^  }$/' "$ROOT_DIR/functions/private-message.js")
 expected_error_completion='  } catch (error) {
     callback(error);
     return;
   }'
 
-if [ "$catch_line" -ge "$error_callback_line" ] || [ "$error_callback_line" -ge "$success_callback_line" ] || \
+if [ "$message_line" -ge "$serialization_line" ] || [ "$serialization_line" -ge "$catch_line" ] || \
+   [ "$catch_line" -ge "$error_callback_line" ] || [ "$error_callback_line" -ge "$success_callback_line" ] || \
    [ "$error_completion" != "$expected_error_completion" ]; then
-  printf '%s\n' "private-message success completion must remain outside the error catch boundary." >&2
+  printf '%s\n' "private-message must serialize TwiML inside the error boundary before success completion." >&2
   exit 1
 fi
+
+for serialization_test_contract in \
+  'function requireValidXmlText(value)' \
+  'TwiML message contains an invalid XML character.' \
+  'fixtures/invalid-xml-message.js' \
+  'invalidXmlMessageError' \
+  'expectError: true'; do
+  if ! grep -Fq "$serialization_test_contract" "$CALLBACK_TEST" && \
+     ! grep -Fq "$serialization_test_contract" "$ROOT_DIR/scripts/fixtures/invalid-xml-message.js"; then
+    printf '%s\n' "Private message serialization tests must keep contract: $serialization_test_contract" >&2
+    exit 1
+  fi
+done
+
+for serialization_document in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fiq 'Private message TwiML must serialize successfully before callback success' \
+    "$ROOT_DIR/$serialization_document"; then
+    printf '%s\n' "$serialization_document must document private message serialization validation." >&2
+    exit 1
+  fi
+done
+
+for serialization_plan_contract in \
+  'Status: Completed' \
+  'invalid-xml-message.js' \
+  'twiml.toString()' \
+  'make check' \
+  'isolated hostile mutations'; do
+  if ! grep -Fq "$serialization_plan_contract" "$PRIVATE_MESSAGE_SERIALIZATION_PLAN"; then
+    printf '%s\n' "Private message serialization plan must preserve completion evidence: $serialization_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "function invokeWithThrowingCallback" "$ROOT_DIR/scripts/test-functions.js" || \
    ! grep -Fq "throwingSuccessCalls.length, 1" "$ROOT_DIR/scripts/test-functions.js" || \

@@ -50,6 +50,10 @@ GitHub Actions provides no-credential verification for pushes and pull requests 
 credentialed deployment remains manual, confirmed, environment-protected, and
 restricted to `refs/heads/main`.
 
+Private message TwiML must serialize successfully before callback success.
+This keeps XML-invalid private asset text on the existing single error callback
+path instead of deferring failure until after the function reports success.
+
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
 ## Safe Research Guidelines
