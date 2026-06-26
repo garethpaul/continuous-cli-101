@@ -56,6 +56,7 @@
 - The manual deploy job uses the package-lock-pinned deploy script instead of installing the latest global Twilio CLI and plugin during CI.
 - Manual Twilio deployment should continue to call the package-lock-pinned `npm run deploy` script from the workflow.
 - Private `/message.js` assets must export a function that returns a non-empty string from a non-blank absolute file asset path before `private-message` adds it to TwiML.
+- Private message TwiML must serialize successfully before callback success so invalid XML text follows the existing error completion path.
 - The local Twilio harness must reject synchronous and near-immediate duplicate callbacks while leaving post-timeout callbacks inert.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - Deployment or publish scripts exist; do not run them unless explicitly asked.

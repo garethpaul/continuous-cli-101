@@ -211,6 +211,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Private `/message.js` assets must export a function that returns a non-empty
   string from a non-blank absolute file asset path before `private-message`
   adds it to TwiML.
+- Private message TwiML must serialize successfully before callback success so
+  XML-invalid asset text cannot escape the function's error boundary.
 - `private-message` computes its result before completing, with one error and
   one success callback site outside each other's exception boundary.
 - The local TwiML harness keeps all message elements inside one response

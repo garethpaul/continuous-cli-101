@@ -36,6 +36,7 @@ exports.handler = function(context, event, callback) {
 
     twiml = new Twilio.twiml.MessagingResponse();
     twiml.message(message);
+    twiml.toString();
   } catch (error) {
     callback(error);
     return;

@@ -1,5 +1,77 @@
 # Changes
 
+## 2026-06-26 06:15 PDT - P2 - Validate private message TwiML before success
+
+### Summary
+
+Forced private-asset TwiML serialization inside the function's existing error
+boundary so XML-invalid message text cannot fail only after callback success.
+Private message TwiML must serialize successfully before callback success.
+
+### Work completed
+
+- Reproduced the post-callback failure with the installed Twilio library using
+  a private asset message containing NUL.
+- Added an XML-invalid message fixture and production-shaped local serializer
+  rejection.
+- Forced `MessagingResponse.toString()` before the single success callback.
+- Added mutation-sensitive ordering, fixture, guidance, and plan contracts.
+
+### Threads
+
+- None; functions, harnesses, workflows, plans, issues, PRs, and recent hosted
+  verification were reviewed directly.
+
+### Files changed
+
+- `functions/private-message.js` — pre-success TwiML serialization.
+- `scripts/test-functions.js` and `scripts/fixtures/invalid-xml-message.js` —
+  invalid XML regression.
+- `scripts/check-baseline.sh` — durable source/test/documentation contracts.
+- `AGENTS.md`, `README.md`, `SECURITY.md`, and `VISION.md` — maintained safety
+  contract.
+- `docs/plans/2026-06-26-private-message-serialization.md` — implementation and
+  verification record.
+
+### Validation
+
+- Direct installed-Twilio probe — reproduced `Invalid character in string`
+  during serialization of a NUL-containing message.
+- Node 22 production-library callback probe — passed with one error callback
+  and no success result for the invalid message fixture.
+- RED function harness — failed because the function reported success before
+  the local serializer inspected the invalid message.
+- GREEN function harness — passed after serialization moved before success.
+- Node 22.13.0 clean install, ESLint, function tests, and npm audit — passed;
+  npm reported zero vulnerabilities.
+- Eight isolated hostile source, invocation, regression, fixture, guidance,
+  plan, and direct source-contract mutations — all rejected.
+- The first clean-container command exited nonzero only during temp cleanup
+  because container-created dependencies were root-owned; all requested Node
+  checks had already passed, and the artifact was removed separately.
+- First exact-candidate `make check` — runtime checks passed, then the portable
+  baseline rejected mismatched `VISION.md` wording; guidance was aligned.
+- Final Node 22.13.0 `make check` — passed ESLint, function tests, source
+  contracts, zero-vulnerability audit, hostile checkout-path matrices, and
+  shallow baseline verification.
+- Immutable manual review found the ordering checker could receive empty line
+  numbers if serialization disappeared; exact-count guards now fail clearly
+  before numeric ordering comparisons.
+
+### Bugs / findings
+
+- P2 correctness: customized private message assets could report function
+  success and then fail during TwiML serialization in the runtime.
+
+### Blockers
+
+- Local default Node is 18, below the supported Node 22 line; the complete gate
+  passed in a Node 22.13.0 container and hosted Node 22 remains required.
+
+### Next action
+
+- Complete exact-head review, hosted checks, and merge.
+
 ## 2026-06-25
 
 - Added concrete `npm start` local-server instructions and documented the
