@@ -31,6 +31,11 @@ else
 override CONTINUOUS_CLI_PARSE_FILE := $(shell mktemp "/tmp/continuous-cli-make-list.XXXXXX")
 $(file >$(CONTINUOUS_CLI_PARSE_FILE),$(value MAKEFILE_LIST)$(CONTINUOUS_CLI_LIST_END))
 override CONTINUOUS_CLI_ROOT_CHANNEL := $(shell $(continuous_cli_capture_make_modern))
+ifeq ($(strip $(CONTINUOUS_CLI_ROOT_CHANNEL)),)
+override CONTINUOUS_CLI_USE_LIST_DISCOVERY := 1
+override CONTINUOUS_CLI_MAKEFILE_LIST = $(value MAKEFILE_LIST)
+export CONTINUOUS_CLI_MAKEFILE_LIST
+endif
 endif
 
 ifeq ($(strip $(CONTINUOUS_CLI_ROOT_CHANNEL)$(CONTINUOUS_CLI_USE_LIST_DISCOVERY)),)
