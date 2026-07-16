@@ -1,5 +1,38 @@
 # Changes
 
+## 2026-07-16 00:20 PDT - P2 - Recover dollar-containing paths on GNU Make 4.2
+
+### Summary
+
+GNU Make 4.2 expands `$` sequences when `MAKEFILE_LIST` is written through
+`$(file)`, so `-f 'repo$suffix/Makefile'` reached the capture helper as
+`_repouffix/Makefile` and the identity check failed closed on a legitimate
+invocation. An empty modern capture channel now falls back to the same
+byte-preserving list discovery already used for 3.82.
+
+### Work completed
+
+- Reproduced the mangling against GNU Make 4.2.1 built from source: 4.2.1
+  yields `_repouffix/Makefile` where 4.3 preserves `repo$suffix/Makefile`.
+- Confirmed `dollar-directory` and `dollar-makefile` fail on the base Makefile
+  and pass with the fallback, on 4.2.1.
+- Confirmed the fallback stays dormant on 4.3 and that hostile-empty channels
+  (ambiguity, deletion, collision) still fail closed on both versions.
+- Pinned the fallback with a static contract, since hosted CI runs 4.3 and
+  never exercises it; verified the pre-existing 3.81/3.82 greps pass with the
+  fallback deleted, so they could not have caught its removal.
+
+### Threads
+
+- None; the Makefile routing, version-routing contract, baseline checker, and
+  hosted workflow were reviewed directly.
+
+### Files changed
+
+- `Makefile` — empty-channel fallback to byte-preserving list discovery.
+- `scripts/test-make-version-routing.sh` — 4.2 fallback contract.
+- `README.md` — documented 4.2 routing and the `/proc`-less fail-closed limit.
+
 ## 2026-06-26 06:15 PDT - P2 - Validate private message TwiML before success
 
 ### Summary
