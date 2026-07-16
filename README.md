@@ -147,7 +147,12 @@ embedded helper evaluates every byte-preserving candidate and requires one
 identified Makefile. On Linux it also checks the invoking Make process's
 original `-f` arguments so dollar-containing paths remain byte-exact despite
 3.82's lossy list variable. GNU Make 4.x passes its raw list through a private
-parse file and enforces the same identity rule. Recipes receive only a base64
+parse file and enforces the same identity rule. GNU Make 4.2 expands `$`
+sequences when that list is written through `$(file)`, so an empty capture
+channel falls back to the same byte-preserving list discovery used for 3.82,
+recovering dollar-containing paths from the invoking Make process's original
+`-f` arguments on Linux. Hosts without `/proc` cannot recover those paths and
+fail closed rather than accept an unverified Makefile. Recipes receive only a base64
 identity channel, revalidate the selected file and root, and fail closed on
 deletion or ambiguous identity collisions. Channel decoding uses Node rather
 than GNU-specific `base64` flags so the same recipes run on stock macOS.
