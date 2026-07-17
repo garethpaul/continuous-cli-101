@@ -41,6 +41,7 @@ if [ "${CONTINUOUS_CLI_SHALLOW_BASELINE_ACTIVE:-}" = 1 ] && \
     scripts/check-baseline.sh \
     scripts/run-with-timeout.js \
     scripts/test-baseline-working-tree-contract.sh \
+    scripts/test-baseline-runner-wiring.sh \
     scripts/test-run-with-timeout.js \
     scripts/check-descriptor-discovery-bundle.js \
     scripts/check-descriptor-discovery-lint-contract.js \
@@ -103,6 +104,7 @@ for path in \
   "scripts/check-descriptor-discovery-test-wiring.js" \
   "scripts/run-with-timeout.js" \
   "scripts/test-baseline-working-tree-contract.sh" \
+  "scripts/test-baseline-runner-wiring.sh" \
   "scripts/descriptor-discovery.js" \
   "scripts/test-descriptor-discovery.js" \
   "scripts/test-make-path-boundary.sh" \
@@ -206,6 +208,14 @@ if ! grep -Fxq '8f5148870e1d4b44b928c54e3e730882' "$ROOT_DIR/.continuous-cli-roo
    ! grep -Fq 'shallow-parent-tree-dependence' "$ROOT_DIR/scripts/test-shallow-baseline-mutation.sh" || \
    ! grep -Fq 'public-marker-scan' "$ROOT_DIR/scripts/test-make-path-boundary-mutations.sh"; then
   printf '%s\n' "Makefile path tests must preserve exact package identity and blocker mutations." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Baseline runner execution wiring is authoritative.' \
+    "$ROOT_DIR/scripts/test-baseline-runner-wiring.sh" || \
+   ! grep -Fq 'require_wired ' "$ROOT_DIR/scripts/test-baseline-runner-wiring.sh" || \
+   [ "$(grep -Fc 'require_wired ' "$ROOT_DIR/scripts/test-baseline-runner-wiring.sh")" -ne 25 ]; then
+  printf '%s\n' "Runner wiring contract must keep an execution pin for every baseline runner." >&2
   exit 1
 fi
 
@@ -1150,6 +1160,7 @@ fi
 "$ROOT_DIR/scripts/test-make-base64-portability.sh"
 "$ROOT_DIR/scripts/test-make-version-routing.sh"
 "$ROOT_DIR/scripts/test-baseline-working-tree-contract.sh"
+"$ROOT_DIR/scripts/test-baseline-runner-wiring.sh"
 node "$ROOT_DIR/scripts/test-run-with-timeout.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-bundle.js"
 node "$ROOT_DIR/scripts/check-descriptor-discovery-lint-contract.js"
